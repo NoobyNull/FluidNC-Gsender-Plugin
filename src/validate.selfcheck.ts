@@ -60,5 +60,22 @@ ok(
 	"missing step pin flagged",
 );
 
+// Failsafe (rule 90): unknown top-level section flagged; known dynamic key not.
+const unknown = validateConfig({
+	stepping: { engine: "RMT" },
+	uart1: { txd_pin: "gpio.1" },
+	frobnicate: { foo: 1 },
+});
+ok(
+	unknown.some(
+		(f) => f.level === "warning" && /Unvalidated section "frobnicate"/.test(f.message),
+	),
+	"failsafe flags unknown section",
+);
+ok(
+	!unknown.some((f) => /Unvalidated section "uart1"/.test(f.message)),
+	"failsafe allows known dynamic key uart1",
+);
+
 console.log(`${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

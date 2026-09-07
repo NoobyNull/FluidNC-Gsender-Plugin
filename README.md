@@ -16,10 +16,13 @@ a tabbed form with:
 - **Firmware-derived validation** on edit/save: a TypeScript port of FluidNC's
   own `Configuration::Validator` pass — pin-type-vs-stepping-engine, unusable
   pins, missing step pins, I2S-bus-required, etc. — reporting the firmware's
-  actual messages against `/axes/X/motor0/…`-style paths. See
-  [`src/validate.ts`](src/validate.ts); each rule cites the FluidNC source it
-  came from. Not bit-for-bit (that needs the firmware itself), but faithful and
-  mechanically re-syncable; `npm run check` guards it against regressions.
+  actual messages against `/axes/X/motor0/…`-style paths. Rules live one-per-file
+  in [`src/rules/`](src/rules) (`10-…`, `20-…`, run top-down), each citing the
+  FluidNC source it came from; the last rule (`90-unvalidated`) is a failsafe
+  that flags anything the earlier rules didn't vouch for (e.g. an unrecognized
+  section a future firmware adds). Not bit-for-bit (that needs the firmware
+  itself), but faithful and mechanically re-syncable — add a rule by dropping a
+  new numbered file. `npm run check` guards it against regressions.
 
 ## Screenshots
 
