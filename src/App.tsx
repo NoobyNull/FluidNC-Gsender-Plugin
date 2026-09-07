@@ -1221,8 +1221,18 @@ export default function App() {
 	const pinIssues = useMemo(() => analyzePins(config), [config]);
 
 	// Firmware-derived validation (TS port of FluidNC's validate() pass).
-	// Recomputes on every edit; also surfaced on save.
-	const fwFindings = useMemo(() => validateConfig(config), [config]);
+	// Debounced: the live panel settles ~300ms after you stop editing rather
+	// than recomputing on every keystroke. Save validates fresh (below), so a
+	// save mid-debounce is never stale.
+	const [debouncedConfig, setDebouncedConfig] = useState(config);
+	useEffect(() => {
+		const t = setTimeout(() => setDebouncedConfig(config), 300);
+		return () => clearTimeout(t);
+	}, [config]);
+	const fwFindings = useMemo(
+		() => validateConfig(debouncedConfig),
+		[debouncedConfig],
+	);
 	const fwErrors = fwFindings.filter((f) => f.level === "error").length;
 
 	// pin -> paths using it; consumed by PinAwareTextWidget via formContext.
@@ -1328,11 +1338,14 @@ export default function App() {
 
 	const saveConfigAs = async () => {
 		const result = validator.validateFormData(config, schema);
+		// Validate fresh here (the live panel is debounced and may lag).
+		const liveFindings = validateConfig(config);
+		const liveErrors = liveFindings.filter((f) => f.level === "error");
 		// Firmware validation takes precedence in the message — it's the one the
 		// controller will actually reject on. Structural schema issues are noted too.
-		if (fwErrors > 0) {
+		if (liveErrors.length > 0) {
 			setError(
-				`Firmware validation: ${fwErrors} error(s) — the controller will reject this. Saving anyway. First: ${fwFindings.find((f) => f.level === "error")?.message}`,
+				`Firmware validation: ${liveErrors.length} error(s) — the controller will reject this. Saving anyway. First: ${liveErrors[0].message}`,
 			);
 		} else {
 			setError(
