@@ -214,6 +214,22 @@ for (const path of Object.keys(TEMPLATE_LOADERS).sort()) {
 	(TEMPLATE_GROUPS[group] ??= []).push({ label, path });
 }
 
+// Board pinout images: auto-discovered from src/assets/pinouts/. Drop an image
+// in that folder and it shows up in the Board Pinout viewer — no code change.
+// Filename (minus extension, _/- -> space) becomes the label.
+const PINOUT_URLS = import.meta.glob(
+	"./assets/pinouts/*.{png,jpg,jpeg,svg,webp}",
+	{ eager: true, query: "?url", import: "default" },
+) as Record<string, string>;
+const PINOUTS = Object.entries(PINOUT_URLS)
+	.map(([path, url]) => ({
+		label: (path.split("/").pop() ?? "")
+			.replace(/\.[^.]+$/, "")
+			.replace(/[_-]+/g, " "),
+		url,
+	}))
+	.sort((a, b) => a.label.localeCompare(b.label));
+
 // Live template listing from the community repo. GitHub's API and raw hosts
 // send CORS headers, so this works straight from the plugin sandbox; the
 // vendored set above remains the offline fallback.
@@ -512,11 +528,13 @@ const HARDWARE_PRESETS: {
 	snippet: Record<string, unknown>;
 }[] = [
 	{
-		label: "FluidDial pendant (wired, UART1)",
+		label: "FluidDial pendant / display (wired, UART1)",
 		snippet: {
+			// Generic UART wiring — pins depend on the board (assign txd/rxd per
+			// your pinout). Baud/mode/channel match FluidDial's wired protocol.
 			uart1: {
-				txd_pin: "gpio.4",
-				rxd_pin: "gpio.16",
+				txd_pin: "NO_PIN",
+				rxd_pin: "NO_PIN",
 				baud: 1000000,
 				mode: "8N1",
 			},
@@ -1277,6 +1295,11 @@ export default function App() {
 	);
 	const fwErrors = fwFindings.filter((f) => f.level === "error").length;
 
+	// Board pinout viewer.
+	const [pinoutOpen, setPinoutOpen] = useState(false);
+	const [pinoutTab, setPinoutTab] = useState(0);
+	const [pinoutZoom, setPinoutZoom] = useState(false);
+
 	// Guided setup wizard (null = closed).
 	const [guided, setGuided] = useState<GuidedAnswers | null>(null);
 	const [guidedStep, setGuidedStep] = useState(0);
@@ -1523,6 +1546,66 @@ export default function App() {
 
 	return (
 		<div className="fnc-root">
+			{pinoutOpen && PINOUTS.length > 0 && (
+				<div
+					className="fnc-modal-overlay"
+					onClick={() => setPinoutOpen(false)}
+				>
+					<div
+						className="fnc-modal fnc-pinout-modal"
+						onClick={(e) => e.stopPropagation()}
+					>
+						<div className="fnc-guided-head">
+							<strong>Board Pinout</strong>
+							<button
+								type="button"
+								className="fnc-btn"
+								onClick={() => setPinoutOpen(false)}
+							>
+								Close
+							</button>
+						</div>
+						{PINOUTS.length > 1 && (
+							<div className="fnc-pinout-tabs">
+								{PINOUTS.map((p, i) => (
+									<button
+										key={p.label}
+										type="button"
+										className={`fnc-btn ${i === pinoutTab ? "fnc-primary" : ""}`}
+										onClick={() => {
+											setPinoutTab(i);
+											setPinoutZoom(false);
+										}}
+									>
+										{p.label}
+									</button>
+								))}
+							</div>
+						)}
+						<div className={`fnc-pinout-viewport ${pinoutZoom ? "zoomed" : ""}`}>
+							<img
+								src={PINOUTS[pinoutTab].url}
+								alt={PINOUTS[pinoutTab].label}
+								className="fnc-pinout-img"
+								title="Click to toggle zoom"
+								onClick={() => setPinoutZoom((z) => !z)}
+							/>
+						</div>
+						<p className="fnc-pinout-hint">
+							Click the image to toggle zoom.{" "}
+							<a
+								href={PINOUTS[pinoutTab].url}
+								target="_blank"
+								rel="noreferrer"
+							>
+								Open in a window ↗
+							</a>{" "}
+							to keep it beside the config.
+						</p>
+					</div>
+				</div>
+			)}
+
 			{guided &&
 				(() => {
 					const g = guided;
@@ -1780,6 +1863,19 @@ export default function App() {
 				>
 					✨ Guided Setup
 				</button>
+				{PINOUTS.length > 0 && (
+					<button
+						type="button"
+						className="fnc-btn"
+						onClick={() => {
+							setPinoutOpen(true);
+							setPinoutTab(0);
+							setPinoutZoom(false);
+						}}
+					>
+						📌 Board Pinout
+					</button>
+				)}
 				<label className="fnc-btn">
 					Open YAML…
 					<input
