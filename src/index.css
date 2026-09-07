@@ -561,6 +561,12 @@
 .fnc-root {
 	background: var(--background, #fff);
 	color: var(--content-primary, #1a1a2e);
+	/* gSender ships --destructive but no danger text/bg/border tokens; alias
+	   them here so error + pin-conflict styling follows the theme instead of
+	   falling back to a hardcoded light red in dark mode. */
+	--text-danger: var(--destructive, #dc2626);
+	--border-danger: var(--destructive, #dc2626);
+	--bg-danger: color-mix(in srgb, var(--destructive, #dc2626) 16%, transparent);
 }
 
 /* Toolbar / board / preset bars */
@@ -887,6 +893,11 @@
 .fnc-yaml-pane.expanded {
 	flex-basis: 52rem;
 	max-width: 62vw;
+}
+/* Manual edit = a real editing surface: give it height even when the config
+   is short, so there's room to type rather than a 2-line box. */
+.fnc-yaml-pane.expanded .fnc-yaml-edit {
+	min-height: 65vh;
 }
 
 .fnc-axis-note {

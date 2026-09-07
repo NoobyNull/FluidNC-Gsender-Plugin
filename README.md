@@ -14,6 +14,19 @@ a tabbed form with:
 - 118 bundled board templates plus a live browser of the community config repo.
 - Board sync (read/write `config.yaml` over the FluidNC WebUI).
 
+## Screenshots
+
+| General (dark) | Manual YAML edit |
+| --- | --- |
+| ![General](Images/general.png) | ![Manual edit](Images/manual-edit.png) |
+
+| Axes | Light theme |
+| --- | --- |
+| ![Axes](Images/axes.png) | ![Light](Images/general-light.png) |
+
+The pane on the right is a live `config.yaml` preview; **Manual Edit** expands it
+into a full editor. **Save Config As…** writes the file wherever you choose.
+
 ## References / repositories used
 
 This plugin and the surrounding gSender FluidNC fork build on:
