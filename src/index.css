@@ -863,6 +863,10 @@
 .fnc-yaml-pane .fnc-yaml-edit {
 	max-width: none;
 	height: 100%;
+	/* A <textarea> defaults to rows=2; without a height the live-preview pane
+	   collapses to two lines and looks empty ("reverts to nothing" on Done).
+	   Give it a real height so the whole config.yaml is visible. */
+	min-height: 60vh;
 	background: var(--surface-sunken, #f4f4f8);
 	color: var(--content-primary, #333);
 }
