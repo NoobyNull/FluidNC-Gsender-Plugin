@@ -1252,6 +1252,8 @@ export default function App() {
 			units: "mm",
 			driver: "standard_stepper",
 			axisCount: 3,
+			dualMotor: false,
+			dualAxis: "y",
 			homing: false,
 			corner: "front-left",
 			spindle: "none",
@@ -1554,20 +1556,47 @@ export default function App() {
 						{
 							title: "Axes",
 							body: (
-								<label className="fnc-guided-row">
-									<span>Number of axes</span>
-									<select
-										value={g.axisCount}
-										onChange={(e) =>
-											setGuided({ ...g, axisCount: Number(e.target.value) })
-										}
-									>
-										<option value={3}>3 — XYZ</option>
-										<option value={4}>4 — XYZA</option>
-										<option value={5}>5 — XYZAB</option>
-										<option value={6}>6 — XYZABC</option>
-									</select>
-								</label>
+								<>
+									<label className="fnc-guided-row">
+										<span>Number of axes</span>
+										<select
+											value={g.axisCount}
+											onChange={(e) =>
+												setGuided({ ...g, axisCount: Number(e.target.value) })
+											}
+										>
+											<option value={3}>3 — XYZ</option>
+											<option value={4}>4 — XYZA</option>
+											<option value={5}>5 — XYZAB</option>
+											<option value={6}>6 — XYZABC</option>
+										</select>
+									</label>
+									<label className="fnc-guided-row">
+										<span>Dual-motor axis (gantry)</span>
+										<input
+											type="checkbox"
+											checked={g.dualMotor}
+											onChange={(e) =>
+												setGuided({ ...g, dualMotor: e.target.checked })
+											}
+										/>
+									</label>
+									{g.dualMotor && (
+										<label className="fnc-guided-row">
+											<span>Which axis has two motors?</span>
+											<select
+												value={g.dualAxis}
+												onChange={(e) =>
+													setGuided({ ...g, dualAxis: e.target.value })
+												}
+											>
+												<option value="x">X</option>
+												<option value="y">Y</option>
+												<option value="z">Z</option>
+											</select>
+										</label>
+									)}
+								</>
 							),
 						},
 						{
@@ -1632,6 +1661,12 @@ export default function App() {
 									<li>Units: <strong>{g.units}</strong></li>
 									<li>Driver: <strong>{g.driver}</strong></li>
 									<li>Axes: <strong>{g.axisCount}</strong></li>
+									<li>
+										Dual motor:{" "}
+										<strong>
+											{g.dualMotor ? `yes (${g.dualAxis.toUpperCase()})` : "no"}
+										</strong>
+									</li>
 									<li>
 										Homing:{" "}
 										<strong>{g.homing ? `yes (${g.corner})` : "none"}</strong>

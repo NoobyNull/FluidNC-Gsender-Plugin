@@ -15,6 +15,8 @@ export interface GuidedAnswers {
 	units: "mm" | "inch";
 	driver: Driver;
 	axisCount: number; // 3..6
+	dualMotor: boolean; // gantry axis driven by two motors (motor0 + motor1)
+	dualAxis: string; // which axis is dual (e.g. "y"), when dualMotor
 	homing: boolean;
 	corner: Corner; // which corner homing moves toward (only used when homing)
 	spindle: Spindle;
@@ -123,6 +125,10 @@ export function buildGuidedConfig(a: GuidedAnswers): Record<string, unknown> {
 			max_travel_mm: isZ ? 100 : 200,
 			motor0: driverBlock(a.driver),
 		};
+		// Dual-motor (gantry) axis: a second motor with its own driver + pins.
+		if (a.dualMotor && ax === a.dualAxis) {
+			axisCfg.motor1 = driverBlock(a.driver);
+		}
 		if (a.homing) {
 			const pos = ax === "x" ? posX : ax === "y" ? posY : isZ ? true : false;
 			axisCfg.homing = {

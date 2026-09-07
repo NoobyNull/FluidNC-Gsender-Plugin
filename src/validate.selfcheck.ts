@@ -84,12 +84,15 @@ const g = buildGuidedConfig({
 	units: "inch",
 	driver: "tmc_2209",
 	axisCount: 3,
+	dualMotor: true,
+	dualAxis: "y",
 	homing: true,
 	corner: "back-right",
 	spindle: "vfd",
 });
 const gaxes = g.axes as Record<string, Record<string, unknown>>;
 ok(!!(gaxes.x && gaxes.y && gaxes.z), "guided builds requested axes");
+ok("motor1" in gaxes.y && !("motor1" in gaxes.x), "dual-motor adds motor1 to the chosen axis only");
 ok(
 	!("steps_per_mm" in gaxes.x),
 	"guided omits steps_per_mm (not fabricated)",
