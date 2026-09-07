@@ -40,7 +40,7 @@ export const isObj = (v: unknown): v is Cfg =>
 export const lc = (s: string) => s.toLowerCase();
 export const isNoPin = (b: string) => b === "" || b.toUpperCase() === "NO_PIN";
 
-export const KNOWN_PIN_PREFIXES = ["gpio.", "i2so.", "i2si.", "uart_channel"];
+export const KNOWN_PIN_PREFIXES = ["gpio.", "i2so.", "uart_channel"];
 
 // Motor driver keys that extend StandardStepper (have step/dir pins).
 // Source: FluidNC/src/Motors/*. Re-sync if drivers are added/renamed.

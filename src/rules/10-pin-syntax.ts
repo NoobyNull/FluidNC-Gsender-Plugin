@@ -1,7 +1,7 @@
 // Rule 10 — pin syntax. Source: FluidNC/src/Pin.cpp (Pin::create / parse).
 // Every "*_pin" value must be a recognized pin form; the firmware logs
 // "Unknown pin type:<x>" otherwise. Recognized pins are marked checked so the
-// failsafe (90) doesn't re-flag them.
+// failsafe (1000) doesn't re-flag them.
 import {
 	type Rule,
 	type Finding,

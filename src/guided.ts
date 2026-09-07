@@ -1,8 +1,8 @@
 // Code written by: Claude (Anthropic), via Claude Code.
 //
 // Guided setup: turn a few basic answers into a bootable FluidNC starter config.
-// Pins are left NO_PIN on purpose — the firmware validator then lists exactly
-// which pins the user must fill, acting as a to-do list. steps_per_mm is
+// Pins are left NO_PIN on purpose — the firmware validator flags the required
+// step pins; direction/limit/spindle pins are the user's to fill per wiring. steps_per_mm is
 // deliberately omitted (machine-specific; the firmware default applies until the
 // user calibrates) rather than fabricated from a guess.
 

@@ -102,14 +102,19 @@ function HelpTooltip(props: {
 			className="fnc-help-wrap"
 			onMouseEnter={() => setOpen(true)}
 			onMouseLeave={() => setOpen(false)}
+			onFocus={() => setOpen(true)}
+			onBlur={(e) => {
+				// Keep open while focus moves within the widget (e.g. tabbing to the
+				// wiki link) — only close when focus leaves it entirely.
+				if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false);
+			}}
 		>
 			<button
 				type="button"
 				className="fnc-help"
 				aria-label="Help"
 				title="Help"
-				onFocus={() => setOpen(true)}
-				onBlur={() => setOpen(false)}
+				aria-expanded={open}
 			>
 				?
 			</button>
@@ -147,16 +152,19 @@ function Toggle({
 	on,
 	onChange,
 	label,
+	ariaLabel,
 }: {
 	on: boolean;
 	onChange: (v: boolean) => void;
 	label?: string;
+	ariaLabel?: string;
 }) {
 	return (
 		<label className="fnc-switch">
 			<input
 				type="checkbox"
 				checked={on}
+				aria-label={ariaLabel ?? label}
 				onChange={(e) => onChange(e.target.checked)}
 			/>
 			<span className="fnc-switch-track">
@@ -183,7 +191,11 @@ function ToggleWidget(props: WidgetProps) {
 	return (
 		<div className="fnc-bool-row">
 			<span className="fnc-bool-label">{props.label}</span>
-			<Toggle on={props.value === true} onChange={(v) => props.onChange(v)} />
+			<Toggle
+				on={props.value === true}
+				onChange={(v) => props.onChange(v)}
+				ariaLabel={props.label}
+			/>
 		</div>
 	);
 }
@@ -511,7 +523,7 @@ function CollapsibleSection({
 	return (
 		<div className={`fnc-section ${present ? "open" : ""}`}>
 			<div className="fnc-section-head">
-				<Toggle on={present} onChange={onToggle} />
+				<Toggle on={present} onChange={onToggle} ariaLabel={`Enable ${sectionKey}`} />
 				<span className="fnc-section-title">{sectionKey}</span>
 				<HelpTooltip description={resolveRef(schemaForKey(sectionKey)).description} />
 			</div>
@@ -697,6 +709,7 @@ function AxesEditor({
 			<div className="fnc-axis-enable">
 				<span className="fnc-bool-label">Enable {active.toUpperCase()} axis</span>
 				<Toggle
+					ariaLabel={`Enable ${active.toUpperCase()} axis`}
 					on={active in axes}
 					onChange={(on) => {
 						const next = { ...axes };
@@ -753,6 +766,7 @@ function AxesEditor({
 					<div className={`fnc-section ${"motor1" in axisData ? "open" : ""}`}>
 						<div className="fnc-section-head">
 							<Toggle
+								ariaLabel="Enable Motor 2"
 								on={"motor1" in axisData}
 								onChange={(on) => {
 									if (on) {
@@ -862,14 +876,9 @@ const analyzePins = (config: Record<string, unknown>): PinIssue[] => {
 		const m = pin.match(/^gpio\.(\d+)$/);
 		if (m) {
 			const n = Number(m[1]);
-			// ESP32 (the overwhelmingly common FluidNC target): 6-11 are flash
-			// pins; 34-39 are input-only. Other MCUs differ — heuristic warning.
-			if (n >= 6 && n <= 11) {
-				issues.push({
-					level: "error",
-					message: `${pin} (${list[0].path}) is an ESP32 flash pin — using it will crash the controller`,
-				});
-			}
+			// Pin existence/flash-pin validity is owned by the firmware-derived
+			// validator (rules/20-pin-capability) to avoid double-reporting. The
+			// only hardware check unique to this live panel is input-only-as-output.
 			if (n >= 34 && n <= 39 && list.some((u) => OUTPUT_KEY_RE.test(u.key))) {
 				issues.push({
 					level: "warn",
@@ -1488,6 +1497,18 @@ export default function App() {
 		URL.revokeObjectURL(a.href);
 	};
 
+	// Escape closes the pinout viewer / guided wizard (modals this component owns).
+	useEffect(() => {
+		if (!pinoutOpen && !guided) return;
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key !== "Escape") return;
+			if (pinoutOpen) setPinoutOpen(false);
+			else if (guided) setGuided(null);
+		};
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, [pinoutOpen, guided]);
+
 	// Board sync via gSender's same-origin FluidNC proxy (server relays to the
 	// board's WebUI HTTP file API — the sandbox can't reach the board directly).
 	const loadFromBoard = () => {
@@ -1553,6 +1574,9 @@ export default function App() {
 				>
 					<div
 						className="fnc-modal fnc-pinout-modal"
+						role="dialog"
+						aria-modal="true"
+						aria-label="Board Pinout"
 						onClick={(e) => e.stopPropagation()}
 					>
 						<div className="fnc-guided-head">
@@ -1617,8 +1641,9 @@ export default function App() {
 								<p>
 									This builds a <strong>bootable starter config</strong> from a
 									few basics. Pins are left empty on purpose — after you finish,
-									the firmware validator lists exactly which pins to fill in. You
-									can change anything afterward in the normal editor.
+									the firmware validator flags the required <strong>step pins</strong>;
+									fill in the rest (direction, limits, spindle) per your wiring in
+									the normal editor. You can change anything afterward.
 								</p>
 							),
 						},
@@ -1691,12 +1716,9 @@ export default function App() {
 									</label>
 									<label className="fnc-guided-row">
 										<span>Dual-motor axis (gantry)</span>
-										<input
-											type="checkbox"
-											checked={g.dualMotor}
-											onChange={(e) =>
-												setGuided({ ...g, dualMotor: e.target.checked })
-											}
+										<Toggle
+											on={g.dualMotor}
+											onChange={(v) => setGuided({ ...g, dualMotor: v })}
 										/>
 									</label>
 									{g.dualMotor && (
@@ -1792,7 +1814,7 @@ export default function App() {
 									<li>Spindle: <strong>{g.spindle}</strong></li>
 									<li className="fnc-guided-note">
 										Motion values are conservative starters; pins are empty for
-										you to fill (the validator will flag them).
+										you to fill — the validator flags the required step pins.
 									</li>
 								</ul>
 							),
@@ -1801,9 +1823,12 @@ export default function App() {
 					const last = guidedStep >= steps.length - 1;
 					const step = steps[guidedStep];
 					return (
-						<div className="fnc-modal-overlay" onClick={() => setGuided(null)}>
+						<div className="fnc-modal-overlay">
 							<div
 								className="fnc-modal fnc-guided"
+								role="dialog"
+								aria-modal="true"
+								aria-label="Guided Setup"
 								onClick={(e) => e.stopPropagation()}
 							>
 								<div className="fnc-guided-head">

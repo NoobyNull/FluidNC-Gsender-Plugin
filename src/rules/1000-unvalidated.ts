@@ -25,7 +25,10 @@ const CURATED = new Set([
 	"PWM", "10V", "Laser", "NoSpindle", "BESC", "relay", "HBridge", "plasma",
 	"Huanyang", "H2A", "YL620", "DeltaVFD", "NowForever",
 ]);
-const DYNAMIC = /^(uart|uart_channel|spi)\d+$/;
+const DYNAMIC = /^(uart|uart_channel|spi)\d+$/i;
+// FluidNC config keys are case-insensitive (community configs use PWM:/pwm:,
+// Relay:/relay:, UART1:/uart1:), so match lowercased.
+const CURATED_LC = new Set([...CURATED].map((k) => k.toLowerCase()));
 
 // Flat vocabulary of every property name that appears anywhere in the schema.
 function schemaVocab(): Set<string> {
@@ -63,10 +66,11 @@ const rule: Rule = {
 			}
 		}
 
-		// (b) unrecognized top-level sections
-		if (!vocab) vocab = schemaVocab();
+		// (b) unrecognized top-level sections (case-insensitive)
+		if (!vocab) vocab = new Set([...schemaVocab()].map((k) => k.toLowerCase()));
 		for (const key of Object.keys(ctx.config)) {
-			if (CURATED.has(key) || DYNAMIC.test(key) || vocab.has(key)) continue;
+			const lc = key.toLowerCase();
+			if (CURATED_LC.has(lc) || DYNAMIC.test(key) || vocab.has(lc)) continue;
 			out.push({
 				path: `/${key}`,
 				message: `Unvalidated section "${key}" — not recognized; the validator may be out of date (the controller will decide)`,

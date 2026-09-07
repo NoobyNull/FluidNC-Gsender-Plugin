@@ -41,11 +41,6 @@
 	background: #e8e8e8;
 }
 
-.fnc-submit {
-	margin-top: 1rem;
-	font-weight: 600;
-}
-
 .fnc-error {
 	background: var(--bg-danger, #ffe5e5);
 	color: var(--text-danger, #a3261f);
@@ -158,9 +153,6 @@
 	font-weight: 600;
 }
 
-.fnc-primary:hover {
-	background: #2c56c4;
-}
 
 /* Pin conflict panel */
 .fnc-pins {
@@ -185,13 +177,6 @@
 }
 
 /* Pin widget */
-.fnc-pin-row {
-	display: flex;
-	gap: 0.4rem;
-	align-items: center;
-	flex-wrap: wrap;
-}
-
 .fnc-pin-invert {
 	display: flex !important;
 	align-items: center;
@@ -327,19 +312,6 @@
 .fnc-axis-tab.active {
 	background: #3a6df0;
 	color: #fff;
-}
-
-.fnc-axis-add {
-	padding: 0.35rem 0.6rem;
-	border: 1px dashed #9ab;
-	border-radius: 4px;
-	background: none;
-	cursor: pointer;
-	color: #567;
-}
-
-.fnc-axis-add:hover {
-	background: #eef;
 }
 
 /* Apple-style toggle switch */
@@ -544,7 +516,7 @@
 }
 
 .fnc-primary:hover {
-	background: #2f6fe0;
+	background: color-mix(in srgb, var(--primary, #3b82f6) 85%, black);
 }
 
 .fnc-section-title {
@@ -748,7 +720,7 @@
 }
 .fnc-axis-tab .fnc-dot {
 	margin-left: 0.4rem;
-	background: #fff;
+	background: var(--primary, #3b82f6);
 }
 
 /* Motor section note */
@@ -828,11 +800,6 @@
 	line-height: 1.5;
 	border-top: 1px solid var(--border, #e5e7eb);
 	padding-top: 0.4rem;
-}
-.fnc-help-values {
-	margin: 0 0 0.4rem;
-	font-size: 0.82rem;
-	color: var(--content-secondary, #556);
 }
 .fnc-help-panel a {
 	color: var(--primary, #3b82f6);

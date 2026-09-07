@@ -61,7 +61,7 @@ ok(
 	"missing step pin flagged",
 );
 
-// Failsafe (rule 90): unknown top-level section flagged; known dynamic key not.
+// Failsafe (rule 1000): unknown top-level section flagged; known dynamic key not.
 const unknown = validateConfig({
 	stepping: { engine: "RMT" },
 	uart1: { txd_pin: "gpio.1" },
@@ -76,6 +76,15 @@ ok(
 ok(
 	!unknown.some((f) => /Unvalidated section "uart1"/.test(f.message)),
 	"failsafe allows known dynamic key uart1",
+);
+// Case-insensitive: FluidNC keys like PWM:/UART1: (any case) are recognized.
+const cased = validateConfig({
+	PWM: { output_pin: "gpio.2" },
+	UART1: { txd_pin: "gpio.1" },
+});
+ok(
+	!cased.some((f) => /Unvalidated section/.test(f.message)),
+	"failsafe is case-insensitive (PWM/UART1 not flagged)",
 );
 
 // Guided builder: structure + honors "no steps_per_mm" + scaffolds buses.
