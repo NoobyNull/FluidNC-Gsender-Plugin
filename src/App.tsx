@@ -11,6 +11,7 @@ import Ajv2020 from "ajv/dist/2020";
 const validator = customizeValidator({ AjvClass: Ajv2020 });
 import yaml from "js-yaml";
 import schemaJson from "./vendor/fluidnc-config-schema.json";
+import { validateConfig } from "./validate";
 import PinAwareTextWidget from "./PinWidget";
 
 // FluidNC wiki page per config section (verified against wiki.fluidnc.com).
@@ -1219,6 +1220,11 @@ export default function App() {
 
 	const pinIssues = useMemo(() => analyzePins(config), [config]);
 
+	// Firmware-derived validation (TS port of FluidNC's validate() pass).
+	// Recomputes on every edit; also surfaced on save.
+	const fwFindings = useMemo(() => validateConfig(config), [config]);
+	const fwErrors = fwFindings.filter((f) => f.level === "error").length;
+
 	// pin -> paths using it; consumed by PinAwareTextWidget via formContext.
 	const usedPins = useMemo(() => {
 		const map = new Map<string, string[]>();
@@ -1322,11 +1328,19 @@ export default function App() {
 
 	const saveConfigAs = async () => {
 		const result = validator.validateFormData(config, schema);
-		setError(
-			result.errors.length
-				? `Config has ${result.errors.length} validation issue(s) — saving anyway. First: ${result.errors[0].stack}`
-				: "",
-		);
+		// Firmware validation takes precedence in the message — it's the one the
+		// controller will actually reject on. Structural schema issues are noted too.
+		if (fwErrors > 0) {
+			setError(
+				`Firmware validation: ${fwErrors} error(s) — the controller will reject this. Saving anyway. First: ${fwFindings.find((f) => f.level === "error")?.message}`,
+			);
+		} else {
+			setError(
+				result.errors.length
+					? `Config has ${result.errors.length} schema issue(s) — saving anyway. First: ${result.errors[0].stack}`
+					: "",
+			);
+		}
 		const name = sourceName.endsWith(".yaml") ? sourceName : "config.yaml";
 		// Native "Save As" dialog (lets the user pick the directory) when the
 		// File System Access API is available — it is in gSender's Electron
@@ -1545,6 +1559,29 @@ export default function App() {
 								className={i.level === "error" ? "fnc-pin-err" : "fnc-pin-warn"}
 							>
 								{i.message}
+							</li>
+						))}
+					</ul>
+				</div>
+			)}
+
+			{fwFindings.length > 0 && (
+				<div className="fnc-pins">
+					<strong>
+						Firmware validation ({fwErrors} error
+						{fwErrors === 1 ? "" : "s"}
+						{fwFindings.length - fwErrors > 0
+							? `, ${fwFindings.length - fwErrors} warning${fwFindings.length - fwErrors === 1 ? "" : "s"}`
+							: ""}
+						)
+					</strong>
+					<ul>
+						{fwFindings.map((f) => (
+							<li
+								key={`${f.path}:${f.message}`}
+								className={f.level === "error" ? "fnc-pin-err" : "fnc-pin-warn"}
+							>
+								<code>{f.path}</code> — {f.message}
 							</li>
 						))}
 					</ul>

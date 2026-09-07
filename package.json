@@ -6,7 +6,8 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"check": "esbuild src/validate.selfcheck.ts --bundle --format=esm --outfile=node_modules/.cache/vcheck.mjs --log-level=error && node node_modules/.cache/vcheck.mjs"
 	},
 	"dependencies": {
 		"@rjsf/core": "^5.24.0",

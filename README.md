@@ -13,6 +13,13 @@ a tabbed form with:
 - Apple-style enable toggles that add/remove optional sections.
 - 118 bundled board templates plus a live browser of the community config repo.
 - Board sync (read/write `config.yaml` over the FluidNC WebUI).
+- **Firmware-derived validation** on edit/save: a TypeScript port of FluidNC's
+  own `Configuration::Validator` pass — pin-type-vs-stepping-engine, unusable
+  pins, missing step pins, I2S-bus-required, etc. — reporting the firmware's
+  actual messages against `/axes/X/motor0/…`-style paths. See
+  [`src/validate.ts`](src/validate.ts); each rule cites the FluidNC source it
+  came from. Not bit-for-bit (that needs the firmware itself), but faithful and
+  mechanically re-syncable; `npm run check` guards it against regressions.
 
 ## Screenshots
 
@@ -23,6 +30,10 @@ a tabbed form with:
 | Axes | Light theme |
 | --- | --- |
 | ![Axes](Images/axes.png) | ![Light](Images/general-light.png) |
+
+| Firmware-derived validation |
+| --- |
+| ![Validation](Images/validation.png) |
 
 The pane on the right is a live `config.yaml` preview; **Manual Edit** expands it
 into a full editor. **Save Config As…** writes the file wherever you choose.

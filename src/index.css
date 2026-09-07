@@ -695,6 +695,24 @@
 .fnc-pin-err {
 	color: var(--destructive, #b02a2a);
 }
+/* Notice panel (pin conflicts + firmware validation): themed surface so it's
+   readable in dark mode instead of a hardcoded cream box. */
+.fnc-pins {
+	background: var(--surface-elevated, #fff7e0);
+	border-color: var(--outline-strong, #d9a520);
+}
+.fnc-pins strong {
+	color: var(--content-primary, #1a1a2e);
+}
+.fnc-pin-warn {
+	color: var(--content-secondary, #8a6d00);
+}
+.fnc-pins code {
+	color: var(--content-primary, #1a1a2e);
+	background: var(--surface-sunken, #00000010);
+	padding: 0 0.25rem;
+	border-radius: 3px;
+}
 
 /* Boolean rows: name left, toggle right (consistent with other rows) */
 .fnc-bool-row {
