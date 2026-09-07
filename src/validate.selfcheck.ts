@@ -2,6 +2,7 @@
 // Assertions mirror what the real FluidNC firmware prints for the same configs
 // (verified against the linux sim). Keep these green when re-syncing rules.
 import { validateConfig } from "./validate";
+import { buildGuidedConfig } from "./guided";
 
 let pass = 0;
 let fail = 0;
@@ -75,6 +76,36 @@ ok(
 ok(
 	!unknown.some((f) => /Unvalidated section "uart1"/.test(f.message)),
 	"failsafe allows known dynamic key uart1",
+);
+
+// Guided builder: structure + honors "no steps_per_mm" + scaffolds buses.
+const g = buildGuidedConfig({
+	name: "Router",
+	units: "inch",
+	driver: "tmc_2209",
+	axisCount: 3,
+	homing: true,
+	corner: "back-right",
+	spindle: "vfd",
+});
+const gaxes = g.axes as Record<string, Record<string, unknown>>;
+ok(!!(gaxes.x && gaxes.y && gaxes.z), "guided builds requested axes");
+ok(
+	!("steps_per_mm" in gaxes.x),
+	"guided omits steps_per_mm (not fabricated)",
+);
+ok((g as Record<string, unknown>).report_inches === true, "guided honors inch units");
+ok("Huanyang" in g && "uart2" in g, "guided VFD scaffolds its uart bus");
+ok("uart1" in g, "guided TMC2209 scaffolds its uart bus (ports become selectable)");
+ok(
+	(gaxes.x.homing as Record<string, unknown>).positive_direction === true,
+	"guided homing corner back-right -> X positive",
+);
+// Fresh guided config: only expected complaint is empty pins (a to-do list).
+const gf = validateConfig(g);
+ok(
+	gf.filter((f) => f.level === "error").every((f) => /step pin/i.test(f.message)),
+	"guided config's only errors are the pins to fill in",
 );
 
 console.log(`${pass} passed, ${fail} failed`);

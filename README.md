@@ -12,6 +12,12 @@ a tabbed form with:
   type, configure only that type.
 - Apple-style enable toggles that add/remove optional sections.
 - 118 bundled board templates plus a live browser of the community config repo.
+- **Guided Setup** — a conservative step-through (name, units, driver, axes,
+  homing, spindle) that builds a bootable starter `config.yaml` from a few
+  basics. It scaffolds the buses a choice needs (e.g. TMC2209 → a `uart1`
+  section, VFD → `uart2`) so those ports are actually selectable, uses
+  conservative starter motion values, and leaves pins empty so the validator
+  hands you a to-do list. No `steps_per_mm` is fabricated.
 - Board sync (read/write `config.yaml` over the FluidNC WebUI).
 - **Firmware-derived validation** on edit/save: a TypeScript port of FluidNC's
   own `Configuration::Validator` pass — pin-type-vs-stepping-engine, unusable

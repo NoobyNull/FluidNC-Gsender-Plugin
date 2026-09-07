@@ -12,6 +12,12 @@ const validator = customizeValidator({ AjvClass: Ajv2020 });
 import yaml from "js-yaml";
 import schemaJson from "./vendor/fluidnc-config-schema.json";
 import { validateConfig } from "./validate";
+import {
+	buildGuidedConfig,
+	type GuidedAnswers,
+	type Driver,
+	type Spindle,
+} from "./guided";
 import PinAwareTextWidget from "./PinWidget";
 
 // FluidNC wiki page per config section (verified against wiki.fluidnc.com).
@@ -1064,6 +1070,7 @@ function SectionEditor({
 				</CollapsibleSection>
 			))}
 
+
 			{uartPrompt && (
 				<div className="fnc-modal-overlay" onClick={() => setUartPrompt(null)}>
 					<div className="fnc-modal" onClick={(e) => e.stopPropagation()}>
@@ -1234,6 +1241,31 @@ export default function App() {
 		[debouncedConfig],
 	);
 	const fwErrors = fwFindings.filter((f) => f.level === "error").length;
+
+	// Guided setup wizard (null = closed).
+	const [guided, setGuided] = useState<GuidedAnswers | null>(null);
+	const [guidedStep, setGuidedStep] = useState(0);
+	const openGuided = () => {
+		setGuidedStep(0);
+		setGuided({
+			name: "My CNC",
+			units: "mm",
+			driver: "standard_stepper",
+			axisCount: 3,
+			homing: false,
+			corner: "front-left",
+			spindle: "none",
+		});
+	};
+	const finishGuided = () => {
+		if (!guided) return;
+		const cfg = buildGuidedConfig(guided);
+		loadYamlText(
+			yaml.dump(cfg, { noRefs: true, lineWidth: 120 }),
+			`${(guided.name || "config").replace(/\s+/g, "_")}.yaml`,
+		);
+		setGuided(null);
+	};
 
 	// pin -> paths using it; consumed by PinAwareTextWidget via formContext.
 	const usedPins = useMemo(() => {
@@ -1454,9 +1486,230 @@ export default function App() {
 
 	return (
 		<div className="fnc-root">
+			{guided &&
+				(() => {
+					const g = guided;
+					// Conservative step-through. Each entry = one screen.
+					const steps: { title: string; body: React.ReactNode }[] = [
+						{
+							title: "Welcome",
+							body: (
+								<p>
+									This builds a <strong>bootable starter config</strong> from a
+									few basics. Pins are left empty on purpose — after you finish,
+									the firmware validator lists exactly which pins to fill in. You
+									can change anything afterward in the normal editor.
+								</p>
+							),
+						},
+						{
+							title: "Machine name",
+							body: (
+								<label className="fnc-guided-row">
+									<span>Name</span>
+									<input
+										value={g.name}
+										onChange={(e) => setGuided({ ...g, name: e.target.value })}
+									/>
+								</label>
+							),
+						},
+						{
+							title: "Units",
+							body: (
+								<label className="fnc-guided-row">
+									<span>Display units</span>
+									<select
+										value={g.units}
+										onChange={(e) =>
+											setGuided({ ...g, units: e.target.value as "mm" | "inch" })
+										}
+									>
+										<option value="mm">Millimeters</option>
+										<option value="inch">Inches</option>
+									</select>
+								</label>
+							),
+						},
+						{
+							title: "Stepper driver",
+							body: (
+								<label className="fnc-guided-row">
+									<span>Driver</span>
+									<select
+										value={g.driver}
+										onChange={(e) =>
+											setGuided({ ...g, driver: e.target.value as Driver })
+										}
+									>
+										<option value="standard_stepper">
+											External driver (step/dir)
+										</option>
+										<option value="stepstick">StepStick / Pololu socket</option>
+										<option value="tmc_2209">Trinamic TMC2209 (UART)</option>
+									</select>
+								</label>
+							),
+						},
+						{
+							title: "Axes",
+							body: (
+								<label className="fnc-guided-row">
+									<span>Number of axes</span>
+									<select
+										value={g.axisCount}
+										onChange={(e) =>
+											setGuided({ ...g, axisCount: Number(e.target.value) })
+										}
+									>
+										<option value={3}>3 — XYZ</option>
+										<option value={4}>4 — XYZA</option>
+										<option value={5}>5 — XYZAB</option>
+										<option value={6}>6 — XYZABC</option>
+									</select>
+								</label>
+							),
+						},
+						{
+							title: "Homing",
+							body: (
+								<>
+									<label className="fnc-guided-row">
+										<span>Homing</span>
+										<select
+											value={g.homing ? "yes" : "no"}
+											onChange={(e) =>
+												setGuided({ ...g, homing: e.target.value === "yes" })
+											}
+										>
+											<option value="no">None</option>
+											<option value="yes">Home to a corner (limit switches)</option>
+										</select>
+									</label>
+									{g.homing && (
+										<label className="fnc-guided-row">
+											<span>Home corner</span>
+											<select
+												value={g.corner}
+												onChange={(e) =>
+													setGuided({ ...g, corner: e.target.value as Corner })
+												}
+											>
+												<option value="front-left">Front-left</option>
+												<option value="front-right">Front-right</option>
+												<option value="back-left">Back-left</option>
+												<option value="back-right">Back-right</option>
+											</select>
+										</label>
+									)}
+								</>
+							),
+						},
+						{
+							title: "Spindle",
+							body: (
+								<label className="fnc-guided-row">
+									<span>Spindle</span>
+									<select
+										value={g.spindle}
+										onChange={(e) =>
+											setGuided({ ...g, spindle: e.target.value as Spindle })
+										}
+									>
+										<option value="none">None</option>
+										<option value="relay">Relay (on/off)</option>
+										<option value="pwm">PWM</option>
+										<option value="vfd">VFD (Huanyang / RS485)</option>
+									</select>
+								</label>
+							),
+						},
+						{
+							title: "Review",
+							body: (
+								<ul className="fnc-guided-review">
+									<li>Name: <strong>{g.name}</strong></li>
+									<li>Units: <strong>{g.units}</strong></li>
+									<li>Driver: <strong>{g.driver}</strong></li>
+									<li>Axes: <strong>{g.axisCount}</strong></li>
+									<li>
+										Homing:{" "}
+										<strong>{g.homing ? `yes (${g.corner})` : "none"}</strong>
+									</li>
+									<li>Spindle: <strong>{g.spindle}</strong></li>
+									<li className="fnc-guided-note">
+										Motion values are conservative starters; pins are empty for
+										you to fill (the validator will flag them).
+									</li>
+								</ul>
+							),
+						},
+					];
+					const last = guidedStep >= steps.length - 1;
+					const step = steps[guidedStep];
+					return (
+						<div className="fnc-modal-overlay" onClick={() => setGuided(null)}>
+							<div
+								className="fnc-modal fnc-guided"
+								onClick={(e) => e.stopPropagation()}
+							>
+								<div className="fnc-guided-head">
+									<strong>Guided Setup</strong>
+									<span className="fnc-guided-count">
+										Step {guidedStep + 1} of {steps.length} — {step.title}
+									</span>
+								</div>
+								<div className="fnc-guided-body">{step.body}</div>
+								<div className="fnc-modal-btns">
+									<button
+										type="button"
+										className="fnc-btn"
+										disabled={guidedStep === 0}
+										onClick={() => setGuidedStep((s) => Math.max(0, s - 1))}
+									>
+										Back
+									</button>
+									{last ? (
+										<button
+											type="button"
+											className="fnc-btn fnc-primary"
+											onClick={finishGuided}
+										>
+											Build config
+										</button>
+									) : (
+										<button
+											type="button"
+											className="fnc-btn fnc-primary"
+											onClick={() =>
+												setGuidedStep((s) => Math.min(steps.length - 1, s + 1))
+											}
+										>
+											Next
+										</button>
+									)}
+									<button
+										type="button"
+										className="fnc-btn"
+										onClick={() => setGuided(null)}
+									>
+										Cancel
+									</button>
+								</div>
+							</div>
+						</div>
+					);
+				})()}
 			<header className="fnc-toolbar">
 				<strong>FluidNC Configurator</strong>
 				<span className="fnc-source">{sourceName}</span>
+				<button
+					type="button"
+					className="fnc-btn fnc-primary"
+					onClick={openGuided}
+				>
+					✨ Guided Setup
+				</button>
 				<label className="fnc-btn">
 					Open YAML…
 					<input
