@@ -67,16 +67,36 @@ const wikiFor = (key?: string) =>
 // does (the schema description), the allowed values if it's an enum, and a
 // "FluidNC wiki ↗" link to the relevant section page (from formContext.wikiUrl).
 function HelpTooltip(props: {
+	id?: string;
 	description?: unknown;
-	schema?: { enum?: unknown[] };
+	schema?: {
+		enum?: unknown[];
+		type?: string | string[];
+		default?: unknown;
+		minimum?: number;
+		maximum?: number;
+	};
 	registry?: { formContext?: { wikiUrl?: string } };
 }) {
 	const [open, setOpen] = useState(false);
 	const text =
 		typeof props.description === "string" ? props.description.trim() : "";
-	const values = Array.isArray(props.schema?.enum) ? props.schema.enum : null;
+	const s = props.schema ?? {};
+	const values = Array.isArray(s.enum) ? s.enum : null;
 	const wikiUrl = props.registry?.formContext?.wikiUrl;
-	if (!text && !wikiUrl && !values) return null;
+	if (!text && !wikiUrl && !values && s.default === undefined) return null;
+
+	// FluidNC-style meta: Type / Range / Default (like the wiki field docs).
+	const isPin =
+		text.startsWith("FluidNC pin string") || /_pin$/.test(props.id ?? "");
+	const jsonType = Array.isArray(s.type) ? s.type.join(" | ") : s.type;
+	const typeLabel = isPin ? "Pin" : jsonType;
+	let range: string | null = null;
+	if (isPin) range = "gpio or i2so";
+	else if (values) range = values.map((v) => String(v)).join(", ");
+	else if (s.minimum !== undefined || s.maximum !== undefined)
+		range = `${s.minimum ?? "…"} to ${s.maximum ?? "…"}`;
+
 	return (
 		<span
 			className="fnc-help-wrap"
@@ -95,12 +115,22 @@ function HelpTooltip(props: {
 			</button>
 			{open && (
 				<div className="fnc-help-panel">
-					{text && <p className="fnc-help-desc">{text}</p>}
-					{values && (
-						<p className="fnc-help-values">
-							Values: {values.map((v) => String(v)).join(", ")}
+					{typeLabel && (
+						<p className="fnc-help-meta">
+							<strong>Type:</strong> {typeLabel}
 						</p>
 					)}
+					{range && (
+						<p className="fnc-help-meta">
+							<strong>Range:</strong> {range}
+						</p>
+					)}
+					{s.default !== undefined && (
+						<p className="fnc-help-meta">
+							<strong>Default:</strong> <code>{String(s.default)}</code>
+						</p>
+					)}
+					{text && <p className="fnc-help-desc">{text}</p>}
 					{wikiUrl && (
 						<a href={wikiUrl} target="_blank" rel="noreferrer">
 							FluidNC wiki ↗
