@@ -861,6 +861,34 @@
 	color: var(--content-primary, #333);
 }
 
+/* Manual-edit toggle for the YAML pane. Default = read-only live preview that
+   mirrors the form; "Manual Edit" turns the textarea editable and widens the
+   pane so there's room to type. */
+.fnc-yaml-head {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+.fnc-yaml-editbtn {
+	margin-left: auto;
+	padding: 0.1rem 0.55rem;
+	font-size: 0.78rem;
+	font-weight: 600;
+}
+.fnc-yaml-editbtn.active {
+	background: var(--primary, #3b82f6);
+	color: var(--content-inverse, #fff);
+	border-color: var(--primary, #3b82f6);
+}
+.fnc-yaml-edit[readonly] {
+	cursor: default;
+	opacity: 0.9;
+}
+.fnc-yaml-pane.expanded {
+	flex-basis: 52rem;
+	max-width: 62vw;
+}
+
 .fnc-axis-note {
 	font-size: 0.82rem;
 	color: var(--content-secondary, #556);

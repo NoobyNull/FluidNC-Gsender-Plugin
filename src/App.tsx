@@ -1320,19 +1320,51 @@ export default function App() {
 		ev.target.value = "";
 	};
 
-	const download = () => {
+	const saveConfigAs = async () => {
 		const result = validator.validateFormData(config, schema);
-		if (result.errors.length) {
-			setError(
-				`Config has ${result.errors.length} validation issue(s) — downloading anyway. First: ${result.errors[0].stack}`,
-			);
-		} else {
-			setError("");
+		setError(
+			result.errors.length
+				? `Config has ${result.errors.length} validation issue(s) — saving anyway. First: ${result.errors[0].stack}`
+				: "",
+		);
+		const name = sourceName.endsWith(".yaml") ? sourceName : "config.yaml";
+		// Native "Save As" dialog (lets the user pick the directory) when the
+		// File System Access API is available — it is in gSender's Electron
+		// Chromium. Fall back to a plain download elsewhere (e.g. Firefox).
+		const picker = (
+			window as unknown as {
+				showSaveFilePicker?: (o: unknown) => Promise<{
+					createWritable: () => Promise<{
+						write: (d: string) => Promise<void>;
+						close: () => Promise<void>;
+					}>;
+				}>;
+			}
+		).showSaveFilePicker;
+		if (picker) {
+			try {
+				const handle = await picker({
+					suggestedName: name,
+					types: [
+						{
+							description: "FluidNC config",
+							accept: { "text/yaml": [".yaml", ".yml"] },
+						},
+					],
+				});
+				const w = await handle.createWritable();
+				await w.write(yamlOut);
+				await w.close();
+				return;
+			} catch (e) {
+				if ((e as Error).name === "AbortError") return; // user cancelled
+				// any other error: fall through to the download fallback
+			}
 		}
 		const blob = new Blob([yamlOut], { type: "text/yaml" });
 		const a = document.createElement("a");
 		a.href = URL.createObjectURL(blob);
-		a.download = sourceName.endsWith(".yaml") ? sourceName : "config.yaml";
+		a.download = name;
 		a.click();
 		URL.revokeObjectURL(a.href);
 	};
@@ -1467,9 +1499,9 @@ export default function App() {
 				<button
 					type="button"
 					className="fnc-btn fnc-primary"
-					onClick={download}
+					onClick={saveConfigAs}
 				>
-					Validate &amp; Download
+					Save Config As…
 				</button>
 			</header>
 
@@ -1583,21 +1615,29 @@ export default function App() {
 				</main>
 
 				{showYaml && (
-					<aside className="fnc-yaml-pane">
+					<aside className={`fnc-yaml-pane ${yamlEditing ? "expanded" : ""}`}>
 						<div className="fnc-yaml-head">
-							config.yaml (editable)
+							<span>
+								config.yaml{yamlEditing ? " — manual edit" : " (live preview)"}
+							</span>
 							{yamlError && <span className="fnc-yaml-err"> — {yamlError}</span>}
+							<button
+								type="button"
+								className={`fnc-btn fnc-yaml-editbtn ${yamlEditing ? "active" : ""}`}
+								onClick={() => {
+									setYamlEditing((v) => !v);
+									setYamlError("");
+								}}
+							>
+								{yamlEditing ? "Done" : "Manual Edit"}
+							</button>
 						</div>
 						<textarea
 							className="fnc-yaml fnc-yaml-edit"
 							spellCheck={false}
+							readOnly={!yamlEditing}
 							value={yamlDraft}
 							onChange={(e) => onYamlEdit(e.target.value)}
-							onFocus={() => setYamlEditing(true)}
-							onBlur={() => {
-								setYamlEditing(false);
-								setYamlError("");
-							}}
 						/>
 					</aside>
 				)}
