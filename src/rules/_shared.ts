@@ -11,6 +11,7 @@ export interface Finding {
 	path: string; // firmware-style, e.g. /axes/X/motor0/standard_stepper/step_pin
 	message: string;
 	level: Level;
+	rule?: string; // id of the rule that produced it (set by the runner)
 }
 
 export type Cfg = Record<string, unknown>;

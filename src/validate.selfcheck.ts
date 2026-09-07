@@ -103,6 +103,10 @@ const gaxes = g.axes as Record<string, Record<string, unknown>>;
 ok(!!(gaxes.x && gaxes.y && gaxes.z), "guided builds requested axes");
 ok("motor1" in gaxes.y && !("motor1" in gaxes.x), "dual-motor adds motor1 to the chosen axis only");
 ok(
+	"limit_neg_pin" in (gaxes.x.motor0 as Record<string, unknown>),
+	"guided homing scaffolds limit pins on the motor",
+);
+ok(
 	!("steps_per_mm" in gaxes.x),
 	"guided omits steps_per_mm (not fabricated)",
 );

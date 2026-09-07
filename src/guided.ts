@@ -24,6 +24,15 @@ export interface GuidedAnswers {
 
 export const AXIS_NAMES = ["x", "y", "z", "a", "b", "c"];
 
+// Shared stepping defaults (also used by the editor's DEFAULT_CONFIG).
+export const STEPPING_DEFAULT = {
+	engine: "RMT",
+	idle_ms: 250,
+	pulse_us: 4,
+	dir_delay_us: 0,
+	disable_delay_us: 0,
+} as const;
+
 const driverBlock = (d: Driver): Record<string, unknown> => {
 	if (d === "tmc_2209") {
 		return {
@@ -115,6 +124,12 @@ export function buildGuidedConfig(a: GuidedAnswers): Record<string, unknown> {
 	const posX = a.corner.endsWith("right");
 	const posY = a.corner.startsWith("back");
 	const axes: Record<string, unknown> = { shared_stepper_disable_pin: "NO_PIN" };
+	// A motor = its driver, plus (when homing) empty limit-switch pins so the
+	// user sees they need wiring — homing can't work without them.
+	const motor = () => ({
+		...driverBlock(a.driver),
+		...(a.homing ? { limit_neg_pin: "NO_PIN", limit_pos_pin: "NO_PIN" } : {}),
+	});
 	AXIS_NAMES.slice(0, axisCount).forEach((ax) => {
 		const isZ = ax === "z";
 		// Conservative starter motion — safe/slow for a first boot; tune later.
@@ -123,11 +138,11 @@ export function buildGuidedConfig(a: GuidedAnswers): Record<string, unknown> {
 			max_rate_mm_per_min: isZ ? 500 : 2000,
 			acceleration_mm_per_sec2: isZ ? 25 : 50,
 			max_travel_mm: isZ ? 100 : 200,
-			motor0: driverBlock(a.driver),
+			motor0: motor(),
 		};
 		// Dual-motor (gantry) axis: a second motor with its own driver + pins.
 		if (a.dualMotor && ax === a.dualAxis) {
-			axisCfg.motor1 = driverBlock(a.driver);
+			axisCfg.motor1 = motor();
 		}
 		if (a.homing) {
 			const pos = ax === "x" ? posX : ax === "y" ? posY : isZ ? true : false;
@@ -142,13 +157,7 @@ export function buildGuidedConfig(a: GuidedAnswers): Record<string, unknown> {
 	const cfg: Record<string, unknown> = {
 		name: a.name || "My CNC",
 		board: "None",
-		stepping: {
-			engine: "RMT",
-			idle_ms: 250,
-			pulse_us: 4,
-			dir_delay_us: 0,
-			disable_delay_us: 0,
-		},
+		stepping: { ...STEPPING_DEFAULT },
 		axes,
 		...driverBus(a.driver),
 		...spindleSnippet(a.spindle),

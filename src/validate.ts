@@ -44,5 +44,7 @@ export function validateConfig(config: Cfg): Finding[] {
 		pins: collectPins(config, [], []),
 		checked: new Set<string>(),
 	};
-	return RULES.flatMap((r) => r.run(ctx));
+	// Tag each finding with the rule id that produced it (aids debugging / lets
+	// the UI show provenance on hover).
+	return RULES.flatMap((r) => r.run(ctx).map((f) => ({ ...f, rule: r.id })));
 }

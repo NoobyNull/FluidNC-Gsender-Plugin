@@ -14,9 +14,12 @@ import schemaJson from "./vendor/fluidnc-config-schema.json";
 import { validateConfig } from "./validate";
 import {
 	buildGuidedConfig,
+	AXIS_NAMES,
+	STEPPING_DEFAULT,
 	type GuidedAnswers,
 	type Driver,
 	type Spindle,
+	type Corner,
 } from "./guided";
 import PinAwareTextWidget from "./PinWidget";
 
@@ -604,7 +607,6 @@ const pick = (obj: Record<string, unknown>, keys: string[]) => {
 	return out;
 };
 
-const AXIS_LETTERS = ["x", "y", "z", "a", "b", "c"];
 const AXIS_LEVEL_KEYS = [
 	"shared_stepper_disable_pin",
 	"shared_stepper_reset_pin",
@@ -693,7 +695,7 @@ function AxesEditor({
 			</Form>
 
 			<div className="fnc-axis-tabs">
-				{AXIS_LETTERS.map((a) => (
+				{AXIS_NAMES.map((a) => (
 					<button
 						key={a}
 						type="button"
@@ -824,7 +826,25 @@ interface PinUse {
 
 const PIN_RE = /^(gpio|i2so|uart_channel\d+)\.(\d+)/i;
 
-const collectPins = (
+// Append v to the array stored at key k, creating it if absent.
+const pushInto = <V,>(map: Map<string, V[]>, k: string, v: V) => {
+	const arr = map.get(k);
+	if (arr) arr.push(v);
+	else map.set(k, [v]);
+};
+
+// Render a dotted config path (axes.x.motor0.step_pin) in the firmware's
+// /axes/X/motor0/step_pin style, so both findings panels read the same way.
+const dispPath = (p: string) =>
+	"/" +
+	p
+		.replace(/\[(\d+)\]/g, ".$1")
+		.split(".")
+		.filter(Boolean)
+		.map((s) => (s.length === 1 && /[a-z]/.test(s) ? s.toUpperCase() : s))
+		.join("/");
+
+const collectPinUses = (
 	node: unknown,
 	path: string,
 	out: PinUse[],
@@ -840,10 +860,10 @@ const collectPins = (
 		}
 	} else if (node && typeof node === "object" && !Array.isArray(node)) {
 		for (const [k, v] of Object.entries(node)) {
-			collectPins(v, path ? `${path}.${k}` : k, out);
+			collectPinUses(v, path ? `${path}.${k}` : k, out);
 		}
 	} else if (Array.isArray(node)) {
-		node.forEach((v, i) => collectPins(v, `${path}[${i}]`, out));
+		node.forEach((v, i) => collectPinUses(v, `${path}[${i}]`, out));
 	}
 	return out;
 };
@@ -858,19 +878,19 @@ interface PinIssue {
 }
 
 const analyzePins = (config: Record<string, unknown>): PinIssue[] => {
-	const uses = collectPins(config, "", []);
+	const uses = collectPinUses(config, "", []);
 	const issues: PinIssue[] = [];
 
 	const byPin = new Map<string, PinUse[]>();
 	for (const u of uses) {
-		(byPin.get(u.pin) ?? byPin.set(u.pin, []).get(u.pin))!.push(u);
+		pushInto(byPin, u.pin, u);
 	}
 
 	for (const [pin, list] of byPin) {
 		if (list.length > 1) {
 			issues.push({
 				level: "error",
-				message: `${pin} assigned ${list.length}×: ${list.map((u) => u.path).join(", ")}`,
+				message: `${pin} assigned ${list.length}×: ${list.map((u) => dispPath(u.path)).join(", ")}`,
 			});
 		}
 		const m = pin.match(/^gpio\.(\d+)$/);
@@ -884,7 +904,7 @@ const analyzePins = (config: Record<string, unknown>): PinIssue[] => {
 					level: "warn",
 					message: `${pin} is input-only on ESP32 but used as an output (${list
 						.filter((u) => OUTPUT_KEY_RE.test(u.key))
-						.map((u) => u.path)
+						.map((u) => dispPath(u.path))
 						.join(", ")})`,
 				});
 			}
@@ -1179,13 +1199,7 @@ function SectionEditor({
 const DEFAULT_CONFIG: Record<string, unknown> = {
 	name: "My CNC",
 	board: "None",
-	stepping: {
-		engine: "RMT",
-		idle_ms: 250,
-		pulse_us: 4,
-		dir_delay_us: 0,
-		disable_delay_us: 0,
-	},
+	stepping: { ...STEPPING_DEFAULT },
 	axes: {
 		shared_stepper_disable_pin: "NO_PIN",
 		x: {
@@ -1229,6 +1243,10 @@ const DEFAULT_CONFIG: Record<string, unknown> = {
 		},
 	},
 };
+
+// Each configured uart_channelN exposes companion I/O pins uart_channelN.0..M-1.
+// 18 matches bdring's Airedale STM32 expander; raise if a wider expander ships.
+const UART_CHANNEL_PIN_COUNT = 18;
 
 export default function App() {
 	const [config, setConfig] = useState<Record<string, unknown>>(
@@ -1339,8 +1357,8 @@ export default function App() {
 	// pin -> paths using it; consumed by PinAwareTextWidget via formContext.
 	const usedPins = useMemo(() => {
 		const map = new Map<string, string[]>();
-		for (const u of collectPins(config, "", [])) {
-			(map.get(u.pin) ?? map.set(u.pin, []).get(u.pin))!.push(u.path);
+		for (const u of collectPinUses(config, "", [])) {
+			pushInto(map, u.pin, u.path);
 		}
 		return map;
 	}, [config]);
@@ -1350,21 +1368,13 @@ export default function App() {
 	// over UART — e.g. bdring's Airedale expander adds 18). They appear in the
 	// user_inputs/user_outputs pin dropdowns.
 	const extraPins = useMemo(() => {
-		const pins: {
-			pin: string;
-			input: boolean;
-			output: boolean;
-			pull: boolean;
-			comment?: string;
-		}[] = [];
+		const pins: { pin: string; pull: boolean; comment?: string }[] = [];
 		for (const key of Object.keys(config)) {
 			const m = key.match(/^uart_channel(\d+)$/);
 			if (m) {
-				for (let i = 0; i < 18; i++) {
+				for (let i = 0; i < UART_CHANNEL_PIN_COUNT; i++) {
 					pins.push({
 						pin: `uart_channel${m[1]}.${i}`,
-						input: true,
-						output: true,
 						pull: false,
 						comment: `UART channel ${m[1]} companion pin ${i}`,
 					});
@@ -1612,7 +1622,16 @@ export default function App() {
 								alt={PINOUTS[pinoutTab].label}
 								className="fnc-pinout-img"
 								title="Click to toggle zoom"
+								role="button"
+								tabIndex={0}
+								aria-pressed={pinoutZoom}
 								onClick={() => setPinoutZoom((z) => !z)}
+								onKeyDown={(e) => {
+									if (e.key === "Enter" || e.key === " ") {
+										e.preventDefault();
+										setPinoutZoom((z) => !z);
+									}
+								}}
 							/>
 						</div>
 						<p className="fnc-pinout-hint">
@@ -2037,6 +2056,7 @@ export default function App() {
 							<li
 								key={`${f.path}:${f.message}`}
 								className={f.level === "error" ? "fnc-pin-err" : "fnc-pin-warn"}
+								title={f.rule ? `rule ${f.rule}` : undefined}
 							>
 								<code>{f.path}</code> — {f.message}
 							</li>

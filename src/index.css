@@ -1,7 +1,7 @@
 :root {
 	font-family: system-ui, sans-serif;
 	font-size: 14px;
-	color: #1a1a2e;
+	color: var(--content-primary, #1a1a2e);
 }
 
 .fnc-root {
@@ -172,9 +172,6 @@
 	color: #b02a2a;
 }
 
-.fnc-pin-warn {
-	color: #8a6d00;
-}
 
 /* Pin widget */
 .fnc-pin-invert {
@@ -681,7 +678,9 @@
 	color: var(--content-primary, #1a1a2e);
 }
 .fnc-pin-warn {
-	color: var(--content-secondary, #8a6d00);
+	/* Distinct amber so warnings read differently from red errors and neutral
+	   text; readable on both light and dark panel surfaces. */
+	color: var(--warning, #b8860b);
 }
 .fnc-pins code {
 	color: var(--content-primary, #1a1a2e);
@@ -1036,4 +1035,28 @@
 	flex: 0 0 auto;
 	width: 24rem;
 	max-width: 60%;
+}
+
+/* Narrow viewport (e.g. plugin pane squeezed): stack the YAML preview below the
+   form instead of clipping the three-way flex row, and let the label column
+   shrink so pin controls stay visible. */
+@media (max-width: 1100px) {
+	.fnc-body {
+		flex-wrap: wrap;
+	}
+	.fnc-yaml-pane {
+		position: static;
+		height: auto;
+		max-height: 45vh;
+		flex: 1 1 100%;
+		max-width: 100%;
+		margin-top: 0.75rem;
+	}
+	.fnc-content .form-group.field-string > .control-label,
+	.fnc-content .form-group.field-number > .control-label,
+	.fnc-content .form-group.field-integer > .control-label,
+	.fnc-content .form-group.field-boolean > .control-label {
+		flex: 0 1 12rem;
+		min-width: 0;
+	}
 }

@@ -4,8 +4,6 @@
 
 export interface PinDef {
 	pin: string; // "gpio.22"
-	input: boolean;
-	output: boolean;
 	pull: boolean; // supports internal pull-up/down
 	restricted?: boolean; // never selectable (flash pins etc.)
 	comment?: string;
@@ -13,54 +11,47 @@ export interface PinDef {
 
 const g = (
 	n: number,
-	input: boolean,
-	output: boolean,
 	pull: boolean,
 	comment?: string,
 	restricted = false,
-): PinDef => ({ pin: `gpio.${n}`, input, output, pull, comment, restricted });
+): PinDef => ({ pin: `gpio.${n}`, pull, comment, restricted });
 
 export const ESP32_PINS: PinDef[] = [
-	{ pin: "NO_PIN", input: true, output: true, pull: false },
-	g(0, true, true, true, "Bootloader strap pin — usable, but experts only"),
-	g(1, false, true, false, "USB/serial TX — using this breaks the console", true),
-	g(2, true, true, true, "Boot strap pin; often the on-board LED"),
-	g(3, true, false, false, "USB/serial RX — using this breaks the console", true),
-	g(4, true, true, true),
-	g(5, true, true, true, "Boot strap pin — must be high at reset"),
-	g(6, true, true, true, "Used for external flash", true),
-	g(7, true, true, true, "Used for external flash", true),
-	g(8, true, true, true, "Used for external flash", true),
-	g(9, true, true, true, "Used for external flash", true),
-	g(10, true, true, true, "Used for external flash", true),
-	g(11, true, true, true, "Used for external flash", true),
-	g(12, true, true, true, "Boot strap pin — must be low at reset"),
-	g(13, true, true, true),
-	g(14, true, true, true),
-	g(15, true, true, true, "Boot strap pin"),
-	g(16, true, true, true),
-	g(17, true, true, true),
-	g(18, true, true, true),
-	g(19, true, true, true),
-	g(21, true, true, true, "Default I2C SDA"),
-	g(22, true, true, true, "Default I2C SCL"),
-	g(23, true, true, true),
-	g(25, true, true, true, "DAC capable"),
-	g(26, true, true, true, "DAC capable"),
-	g(27, true, true, true),
-	g(32, true, true, true),
-	g(33, true, true, true),
-	g(34, true, false, false, "Input only, no internal pull resistors"),
-	g(35, true, false, false, "Input only, no internal pull resistors"),
-	g(36, true, false, false, "Input only, no internal pull resistors"),
-	g(39, true, false, false, "Input only, no internal pull resistors"),
+	{ pin: "NO_PIN", pull: false },
+	g(0, true, "Bootloader strap pin — usable, but experts only"),
+	g(1, false, "USB/serial TX — using this breaks the console", true),
+	g(2, true, "Boot strap pin; often the on-board LED"),
+	g(3, false, "USB/serial RX — using this breaks the console", true),
+	g(4, true),
+	g(5, true, "Boot strap pin — must be high at reset"),
+	g(6, true, "Used for external flash", true),
+	g(7, true, "Used for external flash", true),
+	g(8, true, "Used for external flash", true),
+	g(9, true, "Used for external flash", true),
+	g(10, true, "Used for external flash", true),
+	g(11, true, "Used for external flash", true),
+	g(12, true, "Boot strap pin — must be low at reset"),
+	g(13, true),
+	g(14, true),
+	g(15, true, "Boot strap pin"),
+	g(16, true),
+	g(17, true),
+	g(18, true),
+	g(19, true),
+	g(21, true, "Default I2C SDA"),
+	g(22, true, "Default I2C SCL"),
+	g(23, true),
+	g(25, true, "DAC capable"),
+	g(26, true, "DAC capable"),
+	g(27, true),
+	g(32, true),
+	g(33, true),
+	g(34, false, "Input only, no internal pull resistors"),
+	g(35, false, "Input only, no internal pull resistors"),
+	g(36, false, "Input only, no internal pull resistors"),
+	g(39, false, "Input only, no internal pull resistors"),
 	// I2SO expander outputs (available when an i2so section is configured)
-	...Array.from({ length: 32 }, (_, i) => ({
-		pin: `i2so.${i}`,
-		input: false,
-		output: true,
-		pull: false,
-	})),
+	...Array.from({ length: 32 }, (_, i) => ({ pin: `i2so.${i}`, pull: false })),
 ];
 
 export const PIN_BY_NAME = new Map(ESP32_PINS.map((p) => [p.pin, p]));
