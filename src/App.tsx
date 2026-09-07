@@ -1,5 +1,5 @@
 // Code written by: Claude (Anthropic), via Claude Code.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Form, { getDefaultRegistry } from "@rjsf/core";
 import type { RJSFSchema, WidgetProps } from "@rjsf/utils";
 import { customizeValidator } from "@rjsf/validator-ajv8";
@@ -1519,6 +1519,13 @@ export default function App() {
 		return () => window.removeEventListener("keydown", onKey);
 	}, [pinoutOpen, guided]);
 
+	// Move focus into a modal when it opens (a11y: screen reader lands in the
+	// dialog; Tab/Escape operate from there). Only one modal is open at a time.
+	const modalRef = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		if (pinoutOpen || guided) modalRef.current?.focus();
+	}, [pinoutOpen, guided, guidedStep]);
+
 	// Board sync via gSender's same-origin FluidNC proxy (server relays to the
 	// board's WebUI HTTP file API — the sandbox can't reach the board directly).
 	const loadFromBoard = () => {
@@ -1587,6 +1594,8 @@ export default function App() {
 						role="dialog"
 						aria-modal="true"
 						aria-label="Board Pinout"
+						ref={modalRef}
+						tabIndex={-1}
 						onClick={(e) => e.stopPropagation()}
 					>
 						<div className="fnc-guided-head">
@@ -1848,6 +1857,8 @@ export default function App() {
 								role="dialog"
 								aria-modal="true"
 								aria-label="Guided Setup"
+								ref={modalRef}
+								tabIndex={-1}
 								onClick={(e) => e.stopPropagation()}
 							>
 								<div className="fnc-guided-head">

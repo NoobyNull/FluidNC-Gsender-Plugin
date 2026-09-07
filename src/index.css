@@ -41,6 +41,13 @@
 	background: #e8e8e8;
 }
 
+/* A <select> styled as a toolbar button: match button padding/radius that the
+   generic `.fnc-root select` rule would otherwise override (they sit together). */
+.fnc-root select.fnc-btn {
+	padding: 0.3rem 0.7rem;
+	border-radius: 4px;
+}
+
 .fnc-error {
 	background: var(--bg-danger, #ffe5e5);
 	color: var(--text-danger, #a3261f);
@@ -827,6 +834,9 @@
 	padding: 1.25rem 1.5rem;
 	max-width: 30rem;
 	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.fnc-modal:focus {
+	outline: none; /* programmatic focus target; no visible ring needed */
 }
 .fnc-modal p {
 	margin: 0 0 0.6rem;
