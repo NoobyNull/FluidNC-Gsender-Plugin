@@ -2,7 +2,7 @@
 //
 // Shared types + pure helpers for the rule pipeline. Each rule lives in its own
 // numbered file (10-, 20-, …) and is run top-down by ../validate.ts. The last
-// rule (90-unvalidated) is the failsafe: it flags anything the earlier rules
+// rule (1000-unvalidated) is the failsafe: it flags anything the earlier rules
 // didn't vouch for, so nothing passes silently unchecked.
 import { parsePin } from "../pins";
 

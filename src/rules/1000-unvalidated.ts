@@ -1,4 +1,5 @@
-// Rule 90 — FAILSAFE (must stay last). Nothing should pass silently unchecked.
+// Rule 1000 — FAILSAFE (must stay last; numbered far out so rules can be
+// inserted freely before it). Nothing should pass silently unchecked.
 // Two nets:
 //   (a) any real pin no earlier rule vouched for -> "unvalidated pin"
 //   (b) any top-level section the validator doesn't recognize (not in the
@@ -44,7 +45,7 @@ function schemaVocab(): Set<string> {
 let vocab: Set<string> | null = null;
 
 const rule: Rule = {
-	id: "90-unvalidated",
+	id: "1000-unvalidated",
 	title: "Failsafe — flag anything unvalidated",
 	run(ctx) {
 		const out: Finding[] = [];

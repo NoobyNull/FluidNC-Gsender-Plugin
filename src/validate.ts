@@ -6,7 +6,7 @@
 //
 // NOT bit-for-bit and NOT auto-updating (that needs the firmware itself, via
 // WASM or the linux sim). Rules are ordered by their numeric filename prefix;
-// the last rule (90-unvalidated) is the failsafe that flags anything the
+// the last rule (1000-unvalidated) is the failsafe that flags anything the
 // earlier rules didn't vouch for. Add a rule = drop a new numbered file here
 // and import it in order below.
 import {
@@ -23,11 +23,12 @@ import rule10 from "./rules/10-pin-syntax";
 import rule20 from "./rules/20-pin-capability";
 import rule30 from "./rules/30-stepper-pins";
 import rule40 from "./rules/40-i2s-bus";
-// 90 is the failsafe and MUST stay last.
-import rule90 from "./rules/90-unvalidated";
+// 1000 is the failsafe and MUST stay last (numbered far out so new rules slot
+// in before it without renumbering).
+import rule1000 from "./rules/1000-unvalidated";
 
 // Top-down execution order.
-const RULES: Rule[] = [rule10, rule20, rule30, rule40, rule90];
+const RULES: Rule[] = [rule10, rule20, rule30, rule40, rule1000];
 
 export type { Finding };
 
