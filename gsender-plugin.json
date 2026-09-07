@@ -1,0 +1,17 @@
+{
+	"id": "family.yax.fluidnc-config",
+	"name": "FluidNC Configurator",
+	"description": "Offline FluidNC YAML config editor driven by the official config schema — dropdowns, pin fields, validation, and board templates.",
+	"version": "0.1.0",
+	"engine": ">=1.6.0",
+	"ui": {
+		"entry": "ui/index.html",
+		"contributions": [
+			{
+				"slot": "tools-page",
+				"route": "fluidnc-config",
+				"label": "FluidNC Config"
+			}
+		]
+	}
+}

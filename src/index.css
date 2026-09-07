@@ -1,0 +1,891 @@
+:root {
+	font-family: system-ui, sans-serif;
+	font-size: 14px;
+	color: #1a1a2e;
+}
+
+.fnc-root {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 1rem;
+}
+
+.fnc-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	position: sticky;
+	top: 0;
+	background: #fff;
+	padding: 0.5rem 0;
+	border-bottom: 1px solid #ddd;
+	z-index: 2;
+}
+
+.fnc-source {
+	color: #666;
+	font-style: italic;
+	margin-right: auto;
+}
+
+.fnc-btn {
+	padding: 0.3rem 0.7rem;
+	border: 1px solid #bbb;
+	border-radius: 4px;
+	background: #f6f6f6;
+	cursor: pointer;
+}
+
+.fnc-btn:hover {
+	background: #e8e8e8;
+}
+
+.fnc-submit {
+	margin-top: 1rem;
+	font-weight: 600;
+}
+
+.fnc-error {
+	background: var(--bg-danger, #ffe5e5);
+	color: var(--text-danger, #a3261f);
+	border: 1px solid var(--border-danger, #d33);
+	border-radius: 4px;
+	padding: 0.5rem 0.75rem;
+	margin: 0.5rem 0;
+	font-size: 0.9rem;
+}
+
+.fnc-yaml {
+	background: #f4f4f8;
+	border: 1px solid #ccd;
+	border-radius: 4px;
+	padding: 0.75rem;
+	overflow-x: auto;
+	max-height: 24rem;
+}
+
+/* rjsf default markup: tighten fieldsets */
+.fnc-root fieldset {
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	margin: 0.6rem 0;
+	padding: 0.6rem 0.9rem;
+}
+
+.fnc-root legend {
+	font-weight: 600;
+	padding: 0 0.3rem;
+}
+
+.fnc-root input[type="text"],
+.fnc-root input[type="number"],
+.fnc-root select,
+.fnc-root textarea {
+	padding: 0.25rem 0.45rem;
+	border: 1px solid #bbb;
+	border-radius: 3px;
+	max-width: 24rem;
+}
+
+.fnc-root label {
+	display: block;
+	margin-top: 0.4rem;
+	font-weight: 500;
+}
+
+.fnc-root .field-description {
+	color: #667;
+	font-size: 0.85rem;
+	margin: 0.1rem 0 0.25rem;
+}
+
+/* Section layout */
+.fnc-body {
+	display: flex;
+	gap: 1rem;
+	align-items: flex-start;
+}
+
+.fnc-nav {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	position: sticky;
+	top: 3.2rem;
+	min-width: 11rem;
+}
+
+.fnc-nav-item {
+	text-align: left;
+	padding: 0.45rem 0.7rem;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	background: none;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+
+.fnc-nav-item:hover {
+	background: #eef;
+}
+
+.fnc-nav-item.active {
+	background: #e3e9ff;
+	border-color: #aab6e8;
+	font-weight: 600;
+}
+
+.fnc-dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: #3a6df0;
+	display: inline-block;
+}
+
+.fnc-content {
+	flex: 1;
+	min-width: 0;
+}
+
+.fnc-primary {
+	background: #3a6df0;
+	color: #fff;
+	border-color: #2c56c4;
+	font-weight: 600;
+}
+
+.fnc-primary:hover {
+	background: #2c56c4;
+}
+
+/* Pin conflict panel */
+.fnc-pins {
+	background: #fff7e0;
+	border: 1px solid #d9a520;
+	border-radius: 4px;
+	padding: 0.5rem 0.75rem;
+	margin: 0.5rem 0;
+}
+
+.fnc-pins ul {
+	margin: 0.3rem 0 0;
+	padding-left: 1.2rem;
+}
+
+.fnc-pin-err {
+	color: #b02a2a;
+}
+
+.fnc-pin-warn {
+	color: #8a6d00;
+}
+
+/* Pin widget */
+.fnc-pin-row {
+	display: flex;
+	gap: 0.4rem;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.fnc-pin-invert {
+	display: flex !important;
+	align-items: center;
+	gap: 0.25rem;
+	margin-top: 0 !important;
+	font-weight: 400 !important;
+}
+
+.fnc-pin-note {
+	color: #667;
+	font-size: 0.82rem;
+	margin-top: 0.2rem;
+}
+
+.fnc-pin-conflict {
+	color: #b02a2a;
+	font-size: 0.85rem;
+	margin-top: 0.25rem;
+	font-weight: 600;
+}
+
+/* Hardware presets */
+.fnc-presets {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	flex-wrap: wrap;
+	margin-bottom: 0.75rem;
+	padding: 0.5rem;
+	background: #f4f7ff;
+	border: 1px solid #ccd8f0;
+	border-radius: 4px;
+}
+
+.fnc-preset-hint {
+	color: #667;
+	font-size: 0.82rem;
+}
+
+/* Board sync bar */
+.fnc-board {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	padding: 0.5rem;
+	margin-top: 0.5rem;
+	background: #eef6ee;
+	border: 1px solid #bcd8bc;
+	border-radius: 4px;
+}
+
+.fnc-board-label {
+	font-weight: 600;
+}
+
+.fnc-board-host {
+	width: 12rem;
+}
+
+.fnc-board-msg {
+	font-size: 0.85rem;
+	color: #335;
+}
+
+/* Help tooltip icon (replaces inline description walls) */
+.fnc-help {
+	display: inline-block;
+	margin-left: 0.35rem;
+	color: #3a6df0;
+	cursor: help;
+	font-size: 0.85rem;
+	user-select: none;
+}
+
+/* Live YAML side pane */
+.fnc-body.with-yaml .fnc-content {
+	min-width: 0;
+}
+
+.fnc-yaml-pane {
+	flex: 0 0 34rem;
+	max-width: 40vw;
+	position: sticky;
+	top: 3.2rem;
+	align-self: flex-start;
+	max-height: calc(100vh - 4rem);
+	display: flex;
+	flex-direction: column;
+	border: 1px solid #ccd;
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.fnc-yaml-head {
+	background: #eef;
+	padding: 0.3rem 0.6rem;
+	font-weight: 600;
+	font-size: 0.85rem;
+	border-bottom: 1px solid #ccd;
+}
+
+.fnc-yaml-pane .fnc-yaml {
+	margin: 0;
+	border: none;
+	border-radius: 0;
+	max-height: none;
+	overflow: auto;
+	flex: 1;
+}
+
+/* Axis sub-tabs */
+.fnc-axis-tabs {
+	display: flex;
+	gap: 4px;
+	margin: 0.75rem 0 0.5rem;
+	border-bottom: 2px solid #dde;
+	padding-bottom: 2px;
+}
+
+.fnc-axis-tab {
+	padding: 0.35rem 0.9rem;
+	border: 1px solid transparent;
+	border-bottom: none;
+	border-radius: 4px 4px 0 0;
+	background: #eef;
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.fnc-axis-tab.active {
+	background: #3a6df0;
+	color: #fff;
+}
+
+.fnc-axis-add {
+	padding: 0.35rem 0.6rem;
+	border: 1px dashed #9ab;
+	border-radius: 4px;
+	background: none;
+	cursor: pointer;
+	color: #567;
+}
+
+.fnc-axis-add:hover {
+	background: #eef;
+}
+
+/* Apple-style toggle switch */
+.fnc-switch {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	cursor: pointer;
+	user-select: none;
+	margin-top: 0 !important;
+}
+
+.fnc-switch input {
+	position: absolute;
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+.fnc-switch-track {
+	position: relative;
+	display: inline-block;
+	width: 42px;
+	height: 24px;
+	background: #c8ccd4;
+	border-radius: 999px;
+	transition: background 0.2s ease;
+	flex: 0 0 auto;
+}
+
+.fnc-switch-thumb {
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 20px;
+	height: 20px;
+	background: #fff;
+	border-radius: 50%;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+	transition: transform 0.2s ease;
+}
+
+.fnc-switch input:checked + .fnc-switch-track {
+	background: #34c759;
+}
+
+.fnc-switch input:checked + .fnc-switch-track .fnc-switch-thumb {
+	transform: translateX(18px);
+}
+
+.fnc-switch input:focus-visible + .fnc-switch-track {
+	outline: 2px solid #3a6df0;
+	outline-offset: 2px;
+}
+
+.fnc-switch-label {
+	font-weight: 500;
+}
+
+/* Collapsible section card */
+.fnc-section {
+	border: 1px solid #dde;
+	border-radius: 6px;
+	margin: 0.5rem 0;
+	background: #fafbff;
+}
+
+.fnc-section.open {
+	background: #fff;
+}
+
+.fnc-section-head {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0.5rem 0.75rem;
+}
+
+.fnc-section-title {
+	font-weight: 600;
+	font-size: 1.02rem;
+}
+
+.fnc-section-body {
+	padding: 0 0.9rem 0.75rem;
+	border-top: 1px solid #eef;
+}
+
+/* Prevent any wide child from forcing horizontal page scroll; keep the YAML
+   pane locked to the right and content wrapping within its column. */
+.fnc-root {
+	overflow-x: hidden;
+}
+
+.fnc-content {
+	overflow-x: hidden;
+	word-break: break-word;
+}
+
+.fnc-content .field-description,
+.fnc-help {
+	overflow-wrap: anywhere;
+}
+
+/* ============================================================
+   gSender-matched skin: blue-accent left nav + horizontal rows
+   ============================================================ */
+:root {
+	--gs-blue: var(--primary, #3b82f6);
+	--gs-blue-400: var(--primary, #60a5fa);
+	--gs-blue-bg: color-mix(in srgb, var(--primary, #3b82f6) 14%, transparent);
+	--gs-border: var(--border, #e5e7eb);
+	--gs-divider: var(--border, #f1f3f5);
+	--gs-label: var(--content-primary, #374151);
+	--gs-muted: var(--content-muted, #6b7280);
+}
+
+/* Left navigation — gSender Config menu look */
+.fnc-nav {
+	min-width: 13rem;
+	gap: 0;
+	border: 1px solid var(--gs-border);
+	border-left: 0;
+	background: #fff;
+	padding: 0;
+}
+
+.fnc-nav-item {
+	border-radius: 0;
+	border-left: 3px solid transparent;
+	border-bottom: 1px solid var(--gs-divider);
+	padding: 0.65rem 1rem;
+	color: var(--gs-label);
+	font-weight: 500;
+}
+
+.fnc-nav-item:hover {
+	background: transparent;
+	color: var(--gs-blue);
+	border-left-color: var(--gs-blue);
+}
+
+.fnc-nav-item.active {
+	background: var(--gs-blue-bg);
+	color: var(--gs-blue);
+	border-left-color: var(--gs-blue-400);
+	font-weight: 500;
+}
+
+.fnc-dot {
+	background: var(--gs-blue);
+}
+
+/* Leaf fields as horizontal rows: label left, control right */
+.fnc-content .form-group.field-string,
+.fnc-content .form-group.field-number,
+.fnc-content .form-group.field-integer,
+.fnc-content .form-group.field-boolean {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	margin: 0;
+	padding: 0.5rem 0.25rem;
+	border-bottom: 1px solid var(--gs-divider);
+}
+
+.fnc-content .form-group.field-string > .control-label,
+.fnc-content .form-group.field-number > .control-label,
+.fnc-content .form-group.field-integer > .control-label,
+.fnc-content .form-group.field-boolean > .control-label {
+	flex: 1;
+	margin: 0;
+	font-weight: 500;
+	color: var(--gs-label);
+}
+
+/* Controls sit at the right, consistent width */
+.fnc-content .form-group.field-string > input,
+.fnc-content .form-group.field-number > input,
+.fnc-content .form-group.field-integer > input,
+.fnc-content .form-group.field-string > select,
+.fnc-content .form-group.field-string > .fnc-pin {
+	flex: 0 0 auto;
+	width: 18rem;
+	max-width: 45%;
+}
+
+/* Object sections keep block layout; give nested legends gSender weight */
+.fnc-content .form-group.field-object > fieldset > legend,
+.fnc-content legend {
+	color: var(--gs-label);
+	font-weight: 500;
+}
+
+/* Blue accents on the primary buttons + section titles */
+.fnc-primary {
+	background: var(--gs-blue);
+	border-color: var(--gs-blue);
+}
+
+.fnc-primary:hover {
+	background: #2f6fe0;
+}
+
+.fnc-section-title {
+	color: var(--gs-label);
+}
+
+.fnc-axis-tab.active {
+	background: var(--gs-blue);
+}
+
+/* ============================================================
+   App theme integration — drive all colors from gSender's
+   tokens (defined in the linked application.css). Dark mode
+   flips automatically because the host toggles
+   .dark[data-dark-theme="workshop"] on this iframe.
+   Fallbacks keep the standalone (no application.css) build readable.
+   ============================================================ */
+.fnc-root {
+	background: var(--background, #fff);
+	color: var(--content-primary, #1a1a2e);
+}
+
+/* Toolbar / board / preset bars */
+.fnc-toolbar {
+	background: var(--surface-raised, #fff);
+	border-bottom-color: var(--border, #e5e7eb);
+}
+.fnc-source {
+	color: var(--content-muted, #6b7280);
+}
+.fnc-board,
+.fnc-presets {
+	background: var(--surface-sunken, #f1f3f5);
+	border-color: var(--border, #e5e7eb);
+}
+.fnc-board-msg,
+.fnc-preset-hint,
+.fnc-pin-note {
+	color: var(--content-secondary, #4b5563);
+}
+
+/* Buttons */
+.fnc-btn {
+	background: var(--surface-raised, #f6f6f6);
+	border-color: var(--border, #bbb);
+	color: var(--content-primary, #1a1a2e);
+}
+.fnc-btn:hover {
+	background: var(--surface-hover, #e8e8e8);
+}
+.fnc-primary,
+.fnc-axis-tab.active {
+	background: var(--primary, #3b82f6);
+	border-color: var(--primary, #3b82f6);
+	color: #fff;
+}
+
+/* Left nav */
+.fnc-nav {
+	background: var(--surface-raised, #fff);
+	border-color: var(--border, #e5e7eb);
+}
+.fnc-nav-item {
+	color: var(--content-secondary, #374151);
+	border-bottom-color: var(--border, #f1f3f5);
+}
+.fnc-nav-item:hover,
+.fnc-nav-item.active {
+	color: var(--primary, #3b82f6);
+	border-left-color: var(--primary, #60a5fa);
+}
+.fnc-nav-item.active {
+	background: color-mix(in srgb, var(--primary, #3b82f6) 14%, transparent);
+}
+.fnc-dot,
+.fnc-help {
+	color: var(--primary, #3b82f6);
+}
+
+/* Cards / sections */
+.fnc-section {
+	background: var(--card, #fafbff);
+	border-color: var(--border, #dde);
+}
+.fnc-section.open {
+	background: var(--surface-raised, #fff);
+}
+.fnc-section-body {
+	border-top-color: var(--border, #eef);
+}
+.fnc-section-title,
+.fnc-content .control-label,
+.fnc-content legend {
+	color: var(--content-primary, #374151);
+}
+
+/* Form controls */
+.fnc-root input[type="text"],
+.fnc-root input[type="number"],
+.fnc-root select,
+.fnc-root textarea {
+	background: var(--surface-raised, #fff);
+	color: var(--content-primary, #1a1a2e);
+	border-color: var(--input, #bbb);
+}
+.fnc-root fieldset {
+	border-color: var(--border, #ddd);
+}
+.fnc-content .form-group.field-string,
+.fnc-content .form-group.field-number,
+.fnc-content .form-group.field-integer,
+.fnc-content .form-group.field-boolean {
+	border-bottom-color: var(--border, #f1f3f5);
+}
+
+/* Live YAML pane */
+.fnc-yaml-pane {
+	border-color: var(--border, #ccd);
+}
+.fnc-yaml-head {
+	background: var(--surface-sunken, #eef);
+	border-bottom-color: var(--border, #ccd);
+	color: var(--content-primary, #1a1a2e);
+}
+.fnc-yaml {
+	background: var(--surface-sunken, #f4f4f8);
+	color: var(--content-secondary, #333);
+}
+
+/* Toggle switch: on-state uses the app accent (blue), not custom green */
+.fnc-switch input:checked + .fnc-switch-track {
+	background: var(--primary, #3b82f6);
+}
+.fnc-switch-track {
+	background: var(--outline-strong, #c8ccd4);
+}
+
+/* Axis tabs */
+.fnc-axis-tab {
+	background: var(--surface-sunken, #eef);
+	color: var(--content-secondary, #374151);
+}
+
+/* Semantic panels keep meaning but theme-safe text */
+.fnc-pin-conflict,
+.fnc-pin-err {
+	color: var(--destructive, #b02a2a);
+}
+
+/* Boolean rows: name left, toggle right (consistent with other rows) */
+.fnc-bool-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	gap: 1rem;
+}
+.fnc-bool-label {
+	color: var(--content-primary, #374151);
+	font-weight: 500;
+}
+
+/* Axis enable row */
+.fnc-axis-enable {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 0.5rem 0.25rem;
+	margin-bottom: 0.5rem;
+	border-bottom: 1px solid var(--border, #e5e7eb);
+}
+.fnc-axis-off {
+	color: var(--content-muted, #6b7280);
+	font-style: italic;
+	padding: 0.75rem 0.25rem;
+}
+.fnc-axis-tab .fnc-dot {
+	margin-left: 0.4rem;
+	background: #fff;
+}
+
+/* Motor section note */
+.fnc-motor-note {
+	color: var(--content-muted, #6b7280);
+	font-size: 0.82rem;
+	font-weight: 400;
+}
+
+/* Footer: wiki link + credits */
+.fnc-footer {
+	margin-top: 1.5rem;
+	padding: 0.75rem 0.25rem;
+	border-top: 1px solid var(--border, #e5e7eb);
+	font-size: 0.82rem;
+	color: var(--content-muted, #6b7280);
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+}
+.fnc-footer a {
+	color: var(--primary, #3b82f6);
+	text-decoration: none;
+}
+.fnc-footer a:hover {
+	text-decoration: underline;
+}
+.fnc-footer-sep {
+	opacity: 0.5;
+}
+
+/* Field help popover (ⓘ → expandable panel) */
+.fnc-help-wrap {
+	position: relative;
+	display: inline-block;
+	margin-left: 0.35rem;
+}
+.fnc-help {
+	border: none;
+	background: none;
+	color: var(--primary, #3b82f6);
+	cursor: pointer;
+	font-size: 0.9rem;
+	padding: 0;
+	line-height: 1;
+}
+.fnc-help-panel {
+	position: absolute;
+	z-index: 10;
+	top: 1.4rem;
+	left: 0;
+	width: 22rem;
+	max-width: 60vw;
+	background: var(--surface-elevated, #fff);
+	color: var(--content-primary, #1a1a2e);
+	border: 1px solid var(--border, #ccd);
+	border-radius: 6px;
+	padding: 0.6rem 0.75rem;
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+	font-weight: 400;
+	white-space: normal;
+}
+.fnc-help-desc {
+	margin: 0 0 0.4rem;
+	font-size: 0.85rem;
+	line-height: 1.5;
+}
+.fnc-help-values {
+	margin: 0 0 0.4rem;
+	font-size: 0.82rem;
+	color: var(--content-secondary, #556);
+}
+.fnc-help-panel a {
+	color: var(--primary, #3b82f6);
+	font-size: 0.85rem;
+	text-decoration: none;
+}
+.fnc-help-panel a:hover {
+	text-decoration: underline;
+}
+
+/* Modal (UART dependency prompt) */
+.fnc-modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 100;
+}
+.fnc-modal {
+	background: var(--surface-elevated, #fff);
+	color: var(--content-primary, #1a1a2e);
+	border: 1px solid var(--border, #ccd);
+	border-radius: 8px;
+	padding: 1.25rem 1.5rem;
+	max-width: 30rem;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.fnc-modal p {
+	margin: 0 0 0.6rem;
+	line-height: 1.5;
+}
+.fnc-modal code {
+	background: var(--surface-sunken, #eef);
+	padding: 0 0.25rem;
+	border-radius: 3px;
+}
+.fnc-modal-btns {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	margin-top: 0.75rem;
+}
+
+/* Editable YAML textarea */
+.fnc-yaml-edit {
+	width: 100%;
+	resize: none;
+	border: none;
+	outline: none;
+	font-family: var(--font-mono, monospace);
+	font-size: 0.8rem;
+	line-height: 1.45;
+	tab-size: 2;
+}
+.fnc-yaml-err {
+	color: var(--text-danger, #d33);
+	font-weight: 400;
+}
+
+.fnc-yaml-pane .fnc-yaml-edit {
+	max-width: none;
+	height: 100%;
+	background: var(--surface-sunken, #f4f4f8);
+	color: var(--content-primary, #333);
+}
+
+.fnc-axis-note {
+	font-size: 0.82rem;
+	color: var(--content-secondary, #556);
+	margin: 0 0 0.5rem;
+	padding: 0.4rem 0.6rem;
+	background: var(--surface-sunken, #f1f3f5);
+	border-radius: 4px;
+}
+
+/* Pin controls as fixed columns (no shift when a pin is selected) */
+.fnc-pin-row {
+	flex-wrap: nowrap;
+}
+.fnc-pin-gpio {
+	flex: 0 0 12rem;
+	width: 12rem;
+}
+.fnc-pin-pull {
+	flex: 0 0 8rem;
+	width: 8rem;
+}
+.fnc-pin-pull:disabled {
+	opacity: 0.4;
+}
+.fnc-pin-invert {
+	flex: 0 0 auto;
+	min-width: 5rem;
+}
