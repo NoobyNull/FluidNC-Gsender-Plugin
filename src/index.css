@@ -278,7 +278,9 @@
 	position: sticky;
 	top: 3.2rem;
 	align-self: flex-start;
-	max-height: calc(100vh - 4rem);
+	/* Full sticky viewport height — fills the room beside the scrolling form
+	   instead of clipping to a short box. */
+	height: calc(100vh - 4rem);
 	display: flex;
 	flex-direction: column;
 	border: 1px solid #ccd;
@@ -498,7 +500,9 @@
 .fnc-content .form-group.field-boolean {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
+	/* Left-group label + control (fixed label column) instead of pushing the
+	   control to the far edge — no wasted middle gap, and controls line up. */
+	justify-content: flex-start;
 	gap: 1rem;
 	margin: 0;
 	padding: 0.5rem 0.25rem;
@@ -509,7 +513,7 @@
 .fnc-content .form-group.field-number > .control-label,
 .fnc-content .form-group.field-integer > .control-label,
 .fnc-content .form-group.field-boolean > .control-label {
-	flex: 1;
+	flex: 0 0 16rem;
 	margin: 0;
 	font-weight: 500;
 	color: var(--gs-label);
@@ -986,21 +990,32 @@
 }
 
 /* Pin controls as fixed columns (no shift when a pin is selected) */
+/* Pin rows are a 3-column grid so GPIO / Pull / Invert always line up across
+   rows and Invert is never clipped: GPIO flexes, Pull + Invert are fixed. */
 .fnc-pin-row {
-	flex-wrap: nowrap;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 6rem 5rem;
+	gap: 0.4rem;
+	align-items: center;
 }
-.fnc-pin-gpio {
-	flex: 0 0 12rem;
-	width: 12rem;
-}
+.fnc-pin-gpio,
 .fnc-pin-pull {
-	flex: 0 0 8rem;
-	width: 8rem;
+	width: 100%;
+	min-width: 0;
 }
 .fnc-pin-pull:disabled {
 	opacity: 0.4;
 }
 .fnc-pin-invert {
+	justify-self: start;
+	white-space: nowrap;
+}
+
+/* Pin fields need room for three columns — override the narrow control cap that
+   plain string fields use (which was clipping Invert). Keep it a fixed, compact
+   width (not stretched) so GPIO doesn't sprawl. :has targets only pin rows. */
+.fnc-content .form-group.field-string:has(.fnc-pin) > .fnc-pin {
 	flex: 0 0 auto;
-	min-width: 5rem;
+	width: 24rem;
+	max-width: 60%;
 }

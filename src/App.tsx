@@ -78,13 +78,18 @@ function HelpTooltip(props: {
 	const wikiUrl = props.registry?.formContext?.wikiUrl;
 	if (!text && !wikiUrl && !values) return null;
 	return (
-		<span className="fnc-help-wrap">
+		<span
+			className="fnc-help-wrap"
+			onMouseEnter={() => setOpen(true)}
+			onMouseLeave={() => setOpen(false)}
+		>
 			<button
 				type="button"
 				className="fnc-help"
 				aria-label="Help"
 				title="Help"
-				onClick={() => setOpen((o) => !o)}
+				onFocus={() => setOpen(true)}
+				onBlur={() => setOpen(false)}
 			>
 				?
 			</button>
