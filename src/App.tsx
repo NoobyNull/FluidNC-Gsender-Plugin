@@ -1369,6 +1369,27 @@ const gsenderBoardHost = (): string => {
 	return "127.0.0.1";
 };
 
+// Formatter run just before saving/sending: canonicalize pin names to FluidNC's
+// lowercase form (I2SO.2 -> i2so.2) so mixed-case configs come out consistent.
+// The editor stays case-indifferent; this only normalizes at output. Deep-clones;
+// only touches string values under keys ending in "_pin".
+const canonicalizePinCase = (v: string): string =>
+	v.replace(/^(gpio|i2so|i2si)(?=\.\d)/i, (m) => m.toLowerCase());
+const formatForOutput = (node: unknown): unknown => {
+	if (Array.isArray(node)) return node.map(formatForOutput);
+	if (node && typeof node === "object") {
+		const out: Record<string, unknown> = {};
+		for (const [k, val] of Object.entries(node as Record<string, unknown>)) {
+			out[k] =
+				/_pin$/.test(k) && typeof val === "string"
+					? canonicalizePinCase(val)
+					: formatForOutput(val);
+		}
+		return out;
+	}
+	return node;
+};
+
 export default function App() {
 	const [config, setConfig] = useState<Record<string, unknown>>(
 		() => structuredClone(DEFAULT_CONFIG),
@@ -1416,6 +1437,11 @@ export default function App() {
 			return `# serialization error: ${e}`;
 		}
 	}, [config]);
+
+	// Formatted YAML for saving/sending (canonical pin case). The live preview
+	// keeps the config's current casing; only output is normalized.
+	const outputYaml = () =>
+		yaml.dump(formatForOutput(config), { noRefs: true, lineWidth: 120 });
 
 	// Keep the editable pane in sync with the form, except while the user is
 	// typing in it (so their edits/cursor aren't clobbered).
@@ -1628,7 +1654,7 @@ export default function App() {
 					],
 				});
 				const w = await handle.createWritable();
-				await w.write(yamlOut);
+				await w.write(outputYaml());
 				await w.close();
 				return;
 			} catch (e) {
@@ -1636,7 +1662,7 @@ export default function App() {
 				// any other error: fall through to the download fallback
 			}
 		}
-		const blob = new Blob([yamlOut], { type: "text/yaml" });
+		const blob = new Blob([outputYaml()], { type: "text/yaml" });
 		const a = document.createElement("a");
 		a.href = URL.createObjectURL(blob);
 		a.download = name;
@@ -1697,7 +1723,7 @@ export default function App() {
 			{
 				method: "POST",
 				headers: { "Content-Type": "text/plain" },
-				body: yamlOut,
+				body: outputYaml(),
 			},
 		)
 			.then(async (r) => {

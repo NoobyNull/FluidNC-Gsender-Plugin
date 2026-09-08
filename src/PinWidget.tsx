@@ -53,7 +53,15 @@ export default function PinAwareTextWidget(props: WidgetProps) {
 	const pinByName = new Map(allPins.map((p) => [p.pin, p]));
 	const selfPath = idToPath(id, formContext?.pathPrefix ?? "");
 	const parsed = parsePin(value);
-	const def = pinByName.get(parsed.base);
+	// FluidNC pin names are case-insensitive (I2SO.2 == i2so.2), and configs off a
+	// board are often uppercase. Match case-insensitively so those pins are
+	// recognized (capabilities, not "(custom)"). The stored value is untouched
+	// until the user actually changes it.
+	const canonical = allPins.find(
+		(p) => p.pin.toLowerCase() === parsed.base.toLowerCase(),
+	);
+	const isKnown = !!canonical;
+	const def = canonical;
 
 	const otherUsers = (usedPins.get(parsed.base) ?? []).filter(
 		(p) => p !== selfPath,
@@ -69,7 +77,7 @@ export default function PinAwareTextWidget(props: WidgetProps) {
 				<select
 					id={id}
 					className="fnc-pin-gpio"
-					value={pinByName.has(parsed.base) ? parsed.base : "__custom"}
+					value={canonical ? canonical.pin : "__custom"}
 					onChange={(e) => {
 						if (e.target.value !== "__custom") {
 							const nd = pinByName.get(e.target.value);
@@ -81,7 +89,7 @@ export default function PinAwareTextWidget(props: WidgetProps) {
 						}
 					}}
 				>
-					{!pinByName.has(parsed.base) && (
+					{!canonical && (
 						<option value="__custom">{parsed.base} (custom)</option>
 					)}
 					{allPins.map((p) => {
