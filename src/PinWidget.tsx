@@ -44,10 +44,30 @@ export default function PinAwareTextWidget(props: WidgetProps) {
 	}
 
 	const usedPins: Map<string, string[]> = formContext?.usedPins ?? new Map();
-	const pathPrefix: string = formContext?.pathPrefix ?? "";
-	// uart_channelN.M pins are companion digital I/O — only valid in
-	// user_inputs/user_outputs. Offer the extra pins only there.
-	const allowExtra = /^user_(inputs|outputs)/.test(pathPrefix);
+	// uart_channelN.M pins are the Airedale expander's slow digital I/O — valid
+	// for any input/output pin (limits, estop/control, probe, coolant, user I/O),
+	// but NOT for timing-critical stepper pins or dedicated bus pins. Gate by the
+	// field itself, not the section (estop_pin lives under control, not user_*).
+	const leafKey = (id.split("/").pop() ?? "").toLowerCase();
+	const NO_EXPANDER = new Set([
+		"step_pin",
+		"direction_pin",
+		"txd_pin",
+		"rxd_pin",
+		"rts_pin",
+		"cts_pin",
+		"sck_pin",
+		"miso_pin",
+		"mosi_pin",
+		"cs_pin",
+		"sda_pin",
+		"scl_pin",
+		"bck_pin",
+		"data_pin",
+		"ws_pin",
+		"oe_pin",
+	]);
+	const allowExtra = !NO_EXPANDER.has(leafKey);
 	const extraPins: PinDef[] = allowExtra ? (formContext?.extraPins ?? []) : [];
 	const allPins = extraPins.length ? [...ESP32_PINS, ...extraPins] : ESP32_PINS;
 	const pinByName = new Map(allPins.map((p) => [p.pin, p]));
