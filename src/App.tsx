@@ -1342,6 +1342,31 @@ const DEFAULT_CONFIG: Record<string, unknown> = {
 // 18 matches bdring's Airedale STM32 expander; raise if a wider expander ships.
 const UART_CHANNEL_PIN_COUNT = 18;
 
+// Default the Board host to whatever gSender is actually connected to. The plugin
+// is same-origin with gSender, so it can read gSender's persisted store
+// (localStorage "sienci"), where the Ethernet IP is widgets.connection.ip (an
+// octet array). Falls back to localhost for the standalone/dev build.
+const gsenderBoardHost = (): string => {
+	try {
+		const ip = (
+			JSON.parse(localStorage.getItem("sienci") || "{}") as {
+				widgets?: { connection?: { ip?: unknown } };
+			}
+		)?.widgets?.connection?.ip;
+		if (Array.isArray(ip) && ip.length === 4) {
+			const s = ip.map((n) => Number(n)).join(".");
+			if (
+				/^\d{1,3}(\.\d{1,3}){3}$/.test(s) &&
+				ip.every((n) => Number(n) >= 0 && Number(n) <= 255)
+			)
+				return s;
+		}
+	} catch {
+		/* no gSender store (dev/standalone) */
+	}
+	return "127.0.0.1";
+};
+
 export default function App() {
 	const [config, setConfig] = useState<Record<string, unknown>>(
 		() => structuredClone(DEFAULT_CONFIG),
@@ -1354,7 +1379,7 @@ export default function App() {
 		{ label: string; path: string }[] | null
 	>(null);
 	const [ghLoading, setGhLoading] = useState(false);
-	const [boardHost, setBoardHost] = useState("127.0.0.1");
+	const [boardHost, setBoardHost] = useState(gsenderBoardHost);
 	const [boardBusy, setBoardBusy] = useState("");
 	const [boardMsg, setBoardMsg] = useState("");
 	// Editable YAML pane: local draft text + parse error. While the pane is
