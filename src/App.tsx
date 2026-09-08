@@ -544,7 +544,21 @@ const augmentSchema = (
 	const props: Record<string, unknown> = {
 		...((b.properties as Record<string, unknown>) ?? {}),
 	};
+	// Keys represented by a oneOf/anyOf choice picker (e.g. motor driver types,
+	// kinematics) aren't plain properties — the picker renders them. Don't also
+	// add them as generic properties or they'd render twice.
+	const branchKeys = new Set<string>();
+	for (const br of [
+		...((b.oneOf as unknown[]) ?? []),
+		...((b.anyOf as unknown[]) ?? []),
+	]) {
+		const rb = resolveRef(br);
+		for (const k of Object.keys((rb.properties as Record<string, unknown>) ?? {}))
+			branchKeys.add(k);
+		for (const k of (rb.required as string[]) ?? []) branchKeys.add(k);
+	}
 	for (const [k, v] of Object.entries(data as Record<string, unknown>)) {
+		if (!(k in props) && branchKeys.has(k)) continue; // handled by the picker
 		const known = k in props ? resolveRef(props[k]) : undefined;
 		if (!known) {
 			const t = inferType(v);
