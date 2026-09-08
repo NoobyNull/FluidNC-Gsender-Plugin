@@ -803,7 +803,7 @@ function AxesEditor({
 						formData={axisData}
 						formContext={{
 							...formProps.formContext,
-							pathPrefix: `axes.${active}`,
+							pathPrefix: `axes.${axisKey}`,
 							wikiUrl: wikiFor("axes"),
 						}}
 						onChange={(e) => patchAxis(e.formData ?? {})}
@@ -824,7 +824,7 @@ function AxesEditor({
 								formData={(axisData.motor0 ?? {}) as Record<string, unknown>}
 								formContext={{
 									...formProps.formContext,
-									pathPrefix: `axes.${active}.motor0`,
+									pathPrefix: `axes.${axisKey}.motor0`,
 									wikiUrl: SECTION_WIKI.__motor,
 								}}
 								onChange={(e) => patchAxis({ motor0: e.formData ?? {} })}
@@ -863,7 +863,7 @@ function AxesEditor({
 									formData={axisData.motor1 as Record<string, unknown>}
 									formContext={{
 										...formProps.formContext,
-										pathPrefix: `axes.${active}.motor1`,
+										pathPrefix: `axes.${axisKey}.motor1`,
 											wikiUrl: SECTION_WIKI.__motor,
 									}}
 									onChange={(e) => patchAxis({ motor1: e.formData ?? {} })}
