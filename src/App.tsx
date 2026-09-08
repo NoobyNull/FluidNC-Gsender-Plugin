@@ -1348,11 +1348,13 @@ const UART_CHANNEL_PIN_COUNT = 18;
 // octet array). Falls back to localhost for the standalone/dev build.
 const gsenderBoardHost = (): string => {
 	try {
+		// gSender persists as { version, state: { widgets: … } }, so the IP lives
+		// under state.widgets.connection.ip (an octet array).
 		const ip = (
 			JSON.parse(localStorage.getItem("sienci") || "{}") as {
-				widgets?: { connection?: { ip?: unknown } };
+				state?: { widgets?: { connection?: { ip?: unknown } } };
 			}
-		)?.widgets?.connection?.ip;
+		)?.state?.widgets?.connection?.ip;
 		if (Array.isArray(ip) && ip.length === 4) {
 			const s = ip.map((n) => Number(n)).join(".");
 			if (
