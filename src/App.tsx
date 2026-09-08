@@ -509,6 +509,59 @@ const isObjectKey = (key: string): boolean => {
 	);
 };
 
+// Classify a top-level key by its ACTUAL value when present (so real configs
+// with keys the schema doesn't know still render correctly); fall back to the
+// schema for keys not yet in the config.
+const isObjectValue = (
+	key: string,
+	config: Record<string, unknown>,
+): boolean => {
+	const v = config[key];
+	if (v !== undefined)
+		return v !== null && typeof v === "object" && !Array.isArray(v);
+	return isObjectKey(key);
+};
+
+// Infer a JSON-Schema type from a runtime value.
+const inferType = (v: unknown): string => {
+	if (Array.isArray(v)) return "array";
+	if (v === null || v === undefined) return "string";
+	const t = typeof v;
+	return t === "number" || t === "boolean" || t === "object" ? t : "string";
+};
+
+// Turn the schema-driven form into a CONFIG-driven one: ensure every key present
+// in `data` has a property in the schema — a generic typed property for keys the
+// bundled schema lacks, recursing into known objects so unknown NESTED fields
+// (e.g. VFD modbus commands, uart passthrough) also render. Without this, real
+// running configs hide (and on edit, drop) everything the schema doesn't define.
+const augmentSchema = (
+	base: unknown,
+	data: unknown,
+): Record<string, unknown> => {
+	const b = resolveRef(base);
+	if (!data || typeof data !== "object" || Array.isArray(data)) return b;
+	const props: Record<string, unknown> = {
+		...((b.properties as Record<string, unknown>) ?? {}),
+	};
+	for (const [k, v] of Object.entries(data as Record<string, unknown>)) {
+		const known = k in props ? resolveRef(props[k]) : undefined;
+		if (!known) {
+			const t = inferType(v);
+			props[k] =
+				t === "object"
+					? augmentSchema({ type: "object", properties: {} }, v)
+					: t === "array"
+						? { type: "array", items: {}, title: k }
+						: { type: t, title: k };
+		} else if (v && typeof v === "object" && !Array.isArray(v)) {
+			// Known object property: recurse to surface any unknown nested keys.
+			props[k] = augmentSchema(known, v);
+		}
+	}
+	return { ...b, type: b.type ?? "object", properties: props };
+};
+
 // A collapsible section with an Apple-style enable toggle. Off = the key is
 // absent from config and the body is hidden; on = key present and its form
 // renders.
@@ -632,19 +685,29 @@ function AxesEditor({
 	formProps: FormProps;
 }) {
 	const [active, setAxis] = useState("x");
-
-	const levelSchema = {
-		type: "object",
-		properties: pick(
-			(schema.$defs?.axesSection as { properties: Record<string, unknown> })
-				.properties,
-			AXIS_LEVEL_KEYS,
-		) as RJSFSchema["properties"],
-		$defs: schema.$defs,
-	} as RJSFSchema;
+	// FluidNC accepts either case and configs off a board are usually uppercase
+	// (X:, Y:…). Resolve the real key case-insensitively so real configs edit,
+	// and preserve whatever case the config already uses on write-back.
+	const axisKeyOf = (letter: string) =>
+		Object.keys(axes).find((k) => k.toLowerCase() === letter) ?? letter;
+	const axisKey = axisKeyOf(active);
 
 	const levelData = pick(axes, AXIS_LEVEL_KEYS);
-	const axisData = (axes[active] ?? {}) as Record<string, unknown>;
+	const levelSchema = {
+		...augmentSchema(
+			{
+				type: "object",
+				properties: pick(
+					(schema.$defs?.axesSection as { properties: Record<string, unknown> })
+						.properties,
+					AXIS_LEVEL_KEYS,
+				),
+			},
+			levelData,
+		),
+		$defs: schema.$defs,
+	} as RJSFSchema;
+	const axisData = (axes[axisKey] ?? {}) as Record<string, unknown>;
 
 	// Split the axis schema: the axis's own settings (steps, rates, homing, …)
 	// separate from the motors, so motors render as their own sections. motor0
@@ -653,22 +716,28 @@ function AxesEditor({
 	const axisProps = (schema.$defs?.axisLetter as {
 		properties: Record<string, unknown>;
 	}).properties;
+	const { motor0: _m0, motor1: _m1, ...axisScalarsData } = axisData;
 	const axisMainSchema = {
-		type: "object",
-		properties: Object.fromEntries(
-			Object.entries(axisProps).filter(
-				([k]) => k !== "motor0" && k !== "motor1",
-			),
-		) as RJSFSchema["properties"],
+		...augmentSchema(
+			{
+				type: "object",
+				properties: Object.fromEntries(
+					Object.entries(axisProps).filter(
+						([k]) => k !== "motor0" && k !== "motor1",
+					),
+				),
+			},
+			axisScalarsData,
+		),
 		$defs: schema.$defs,
 	} as RJSFSchema;
-	const motorSchema = {
-		...resolveRef(axisProps.motor0),
-		$defs: schema.$defs,
-	} as RJSFSchema;
+	// Per-motor so motor0 and motor1 each surface their own (possibly unknown)
+	// fields, e.g. hard_limits, without leaking one motor's keys onto the other.
+	const motorSchemaFor = (md: unknown) =>
+		({ ...augmentSchema(axisProps.motor0, md), $defs: schema.$defs }) as RJSFSchema;
 
 	const patchAxis = (patch: Record<string, unknown>) =>
-		setAxes({ ...axes, [active]: { ...axisData, ...patch } });
+		setAxes({ ...axes, [axisKey]: { ...axisData, ...patch } });
 
 	return (
 		<div>
@@ -703,7 +772,7 @@ function AxesEditor({
 						onClick={() => setAxis(a)}
 					>
 						{a.toUpperCase()}
-						{a in axes && <span className="fnc-dot" />}
+						{axisKeyOf(a) in axes && <span className="fnc-dot" />}
 					</button>
 				))}
 			</div>
@@ -712,20 +781,20 @@ function AxesEditor({
 				<span className="fnc-bool-label">Enable {active.toUpperCase()} axis</span>
 				<Toggle
 					ariaLabel={`Enable ${active.toUpperCase()} axis`}
-					on={active in axes}
+					on={axisKey in axes}
 					onChange={(on) => {
 						const next = { ...axes };
 						if (on) {
-							next[active] = axes[active] ?? {};
+							next[axisKey] = axes[axisKey] ?? {};
 						} else {
-							delete next[active];
+							delete next[axisKey];
 						}
 						setAxes(next);
 					}}
 				/>
 			</div>
 
-			{active in axes ? (
+			{axisKey in axes ? (
 				<>
 					<Form
 						{...formProps}
@@ -751,7 +820,7 @@ function AxesEditor({
 							<Form
 								{...formProps}
 								key={`${active}-m0`}
-								schema={motorSchema}
+								schema={motorSchemaFor(axisData.motor0 ?? {})}
 								formData={(axisData.motor0 ?? {}) as Record<string, unknown>}
 								formContext={{
 									...formProps.formContext,
@@ -790,7 +859,7 @@ function AxesEditor({
 								<Form
 									{...formProps}
 									key={`${active}-m1`}
-									schema={motorSchema}
+									schema={motorSchemaFor(axisData.motor1 ?? {})}
 									formData={axisData.motor1 as Record<string, unknown>}
 									formContext={{
 										...formProps.formContext,
@@ -982,7 +1051,10 @@ function SpindleEditor({
 	};
 
 	const spindleSchema = currentType
-		? ({ ...resolveRef(schema.properties?.[currentType]), $defs: schema.$defs } as RJSFSchema)
+		? ({
+				...augmentSchema(schema.properties?.[currentType], config[currentType]),
+				$defs: schema.$defs,
+			} as RJSFSchema)
 		: null;
 
 	return (
@@ -1070,10 +1142,11 @@ function SectionEditor({
 	setConfig: (fn: (prev: Record<string, unknown>) => Record<string, unknown>) => void;
 	formProps: FormProps;
 }) {
-	const scalarKeys = group.keys.filter(
-		(k) => schemaForKey(k) && !isObjectKey(k),
-	);
-	const objectKeys = group.keys.filter((k) => isObjectKey(k));
+	// Include ALL keys (present-in-config or schema-defined), classified by their
+	// real value — not only ones the schema knows. Unknown scalars render as
+	// generic inputs; unknown objects as collapsible sections.
+	const scalarKeys = group.keys.filter((k) => !isObjectValue(k, config));
+	const objectKeys = group.keys.filter((k) => isObjectValue(k, config));
 
 	// A uart_channelN needs its physical uartN enabled (linked via uart_num).
 	// Prompt when a channel is turned on but its uart isn't configured.
@@ -1092,10 +1165,17 @@ function SectionEditor({
 	};
 
 	const scalarSchema = {
-		type: "object",
-		properties: Object.fromEntries(
-			scalarKeys.map((k) => [k, schemaForKey(k)]),
-		) as RJSFSchema["properties"],
+		...augmentSchema(
+			{
+				type: "object",
+				properties: Object.fromEntries(
+					scalarKeys
+						.map((k) => [k, schemaForKey(k)] as const)
+						.filter(([, s]) => s),
+				),
+			},
+			pick(config, scalarKeys),
+		),
 		$defs: schema.$defs,
 	} as RJSFSchema;
 
@@ -1140,7 +1220,7 @@ function SectionEditor({
 				>
 					<Form
 						{...formProps}
-						schema={{ ...resolveRef(schemaForKey(k)), $defs: schema.$defs } as RJSFSchema}
+						schema={{ ...augmentSchema(schemaForKey(k), config[k]), $defs: schema.$defs } as RJSFSchema}
 						formData={(config[k] ?? {}) as Record<string, unknown>}
 						formContext={{ ...formProps.formContext, pathPrefix: k, wikiUrl: wikiFor(k) }}
 						onChange={(e) =>
@@ -1269,8 +1349,24 @@ export default function App() {
 	const [yamlEditing, setYamlEditing] = useState(false);
 	const [yamlError, setYamlError] = useState("");
 
+	// Config-aware groups: the "Other" tab catches every top-level key the loaded
+	// config actually has that no named group claims — including sections the
+	// bundled schema never heard of — so real running configs are fully editable,
+	// not just the ones the plugin authored.
+	const sectionGroups = useMemo(() => {
+		const named = SECTION_GROUPS.filter((g) => g.title !== "Other");
+		const claimed = new Set(named.flatMap((g) => g.keys));
+		const other = [
+			...new Set([
+				...Object.keys(schema.properties ?? {}),
+				...Object.keys(config),
+			]),
+		].filter((k) => !claimed.has(k));
+		return other.length ? [...named, { title: "Other", keys: other }] : named;
+	}, [config]);
+
 	const activeGroup =
-		SECTION_GROUPS.find((g) => g.title === section) ?? SECTION_GROUPS[0];
+		sectionGroups.find((g) => g.title === section) ?? sectionGroups[0];
 
 	const yamlOut = useMemo(() => {
 		try {
@@ -2078,7 +2174,7 @@ export default function App() {
 
 			<div className={`fnc-body ${showYaml ? "with-yaml" : ""}`}>
 				<nav className="fnc-nav">
-					{SECTION_GROUPS.map((g) => {
+					{sectionGroups.map((g) => {
 						const hasData = g.keys.some((k) => k in config);
 						return (
 							<button
